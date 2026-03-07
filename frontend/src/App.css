@@ -1,0 +1,81 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+@media (max-width: 575px) {
+  #root {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+:root {
+  --pc-safe: #2d6a4f;
+  --pc-safe-bg: #d8f3dc;
+  --pc-avoid: #ae2012;
+  --pc-avoid-bg: #f9dcc4;
+  --pc-irritant: #e67e22;
+  --pc-irritant-bg: #fef5e7;
+}
+
+.badge-safe {
+  background-color: var(--pc-safe-bg);
+  color: var(--pc-safe);
+}
+.badge-avoid {
+  background-color: var(--pc-avoid-bg);
+  color: var(--pc-avoid);
+}
+.badge-irritant {
+  background-color: var(--pc-irritant-bg);
+  color: var(--pc-irritant);
+}
+
+.upload-zone {
+  border: 2px dashed var(--pc-border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.upload-zone.dragging {
+  border-color: var(--pc-gold);
+  background-color: var(--pc-gold-light);
+}

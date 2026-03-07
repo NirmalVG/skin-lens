@@ -1,0 +1,391 @@
+/* PureCheck AI - Custom Overrides on top of Bootstrap */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap");
+
+:root {
+  --pc-dark: #121e15;
+  --pc-green: #1a261e;
+  --pc-gold: #d6a95b;
+  --pc-gold-light: #f5eedc;
+  --pc-cream: #f9f8f6;
+  --pc-white: #ffffff;
+  --pc-text: #131412;
+  --pc-muted: #646b66;
+  --pc-border: #e6e4e0;
+  --pc-avoid-bg: #ffefed;
+  --pc-avoid: #d94a38;
+  --pc-irritant-bg: #fff5e6;
+  --pc-irritant: #d98a28;
+  --pc-safe-bg: #eaf5ee;
+  --pc-safe: #2f8e52;
+  --pc-moderate-bg: #f0f0f0;
+  --pc-moderate: #6b6b6b;
+  --pc-font-serif: "Playfair Display", serif;
+  --pc-font-sans: "Inter", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--pc-font-sans) !important;
+  background-color: var(--pc-cream);
+  color: var(--pc-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--pc-font-serif) !important;
+  color: var(--pc-dark);
+  letter-spacing: -0.02em;
+}
+
+/* Navbar */
+.pc-navbar {
+  background: transparent !important;
+  padding: 20px 0 !important;
+}
+.pc-navbar .navbar-brand {
+  font-family: var(--pc-font-serif) !important;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--pc-dark) !important;
+}
+.pc-navbar .navbar-logo {
+  height: 66px;
+  width: auto;
+  display: block;
+}
+.pc-navbar .nav-link {
+  color: var(--pc-muted) !important;
+  font-size: 0.92rem;
+  font-weight: 400;
+  padding: 0.5rem 1rem !important;
+  transition: color 0.2s ease;
+}
+.pc-navbar .nav-link:hover,
+.pc-navbar .nav-link.active {
+  color: var(--pc-dark) !important;
+  font-weight: 500;
+}
+
+/* Buttons */
+.btn-pc-primary {
+  background-color: var(--pc-green);
+  color: var(--pc-white);
+  border: none;
+  border-radius: 40px;
+  padding: 12px 28px;
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: all 0.3s ease;
+}
+.btn-pc-primary:hover {
+  background-color: var(--pc-dark);
+  color: var(--pc-white);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.btn-pc-secondary {
+  background-color: var(--pc-white);
+  color: var(--pc-dark);
+  border: 1px solid var(--pc-border);
+  border-radius: 40px;
+  padding: 12px 28px;
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: all 0.3s ease;
+}
+.btn-pc-secondary:hover {
+  border-color: var(--pc-dark);
+  color: var(--pc-dark);
+  transform: translateY(-2px);
+}
+
+.btn-pc-gold {
+  background-color: var(--pc-gold);
+  color: var(--pc-dark);
+  border: none;
+  border-radius: 40px;
+  padding: 12px 28px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-pc-gold:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Cards */
+.pc-card {
+  background: var(--pc-white);
+  border-radius: 16px;
+  border: 1px solid var(--pc-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+.pc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.1);
+}
+
+/* Badges */
+.badge-avoid {
+  background-color: var(--pc-avoid-bg) !important;
+  color: var(--pc-avoid) !important;
+}
+.badge-irritant {
+  background-color: var(--pc-irritant-bg) !important;
+  color: var(--pc-irritant) !important;
+}
+.badge-safe {
+  background-color: var(--pc-safe-bg) !important;
+  color: var(--pc-safe) !important;
+}
+.badge-moderate {
+  background-color: var(--pc-moderate-bg) !important;
+  color: var(--pc-moderate) !important;
+}
+.badge-unknown {
+  background-color: #f0f0ff !important;
+  color: #5555aa !important;
+}
+
+/* Status bar in ingredient cards */
+.status-bar {
+  height: 4px;
+  border-radius: 2px;
+  width: 100%;
+  margin: 8px 0;
+}
+.status-bar-avoid {
+  background: var(--pc-avoid);
+}
+.status-bar-irritant {
+  background: var(--pc-irritant);
+}
+.status-bar-safe {
+  background: var(--pc-safe);
+}
+.status-bar-moderate {
+  background: var(--pc-moderate);
+}
+
+/* Section backgrounds */
+.bg-pc-dark {
+  background-color: var(--pc-dark) !important;
+  color: #fff;
+}
+.bg-pc-dark h2,
+.bg-pc-dark h3 {
+  color: #fff !important;
+}
+.bg-pc-cream {
+  background-color: var(--pc-cream);
+}
+.bg-pc-white {
+  background-color: var(--pc-white);
+}
+
+/* Quiz */
+.quiz-option {
+  background: var(--pc-white);
+  border: 2px solid var(--pc-border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.quiz-option:hover {
+  border-color: var(--pc-gold);
+}
+.quiz-option.selected {
+  border-color: var(--pc-gold);
+  background: var(--pc-gold-light);
+}
+.quiz-option.correct {
+  border-color: var(--pc-safe);
+  background: var(--pc-safe-bg);
+}
+.quiz-option.wrong {
+  border-color: var(--pc-avoid);
+  background: var(--pc-avoid-bg);
+}
+
+.quiz-letter {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: var(--pc-cream);
+  color: var(--pc-muted);
+  flex-shrink: 0;
+}
+.quiz-option.selected .quiz-letter {
+  background: var(--pc-gold);
+  color: var(--pc-dark);
+}
+.quiz-option.correct .quiz-letter {
+  background: var(--pc-safe);
+  color: #fff;
+}
+.quiz-option.wrong .quiz-letter {
+  background: var(--pc-avoid);
+  color: #fff;
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--pc-border);
+  border-radius: 16px;
+  padding: 60px;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: var(--pc-cream);
+}
+.upload-zone:hover,
+.upload-zone.dragging {
+  border-color: var(--pc-gold);
+  background: var(--pc-gold-light);
+}
+
+/* Footer */
+.pc-footer {
+  border-top: 1px solid var(--pc-border);
+  padding: 60px 0;
+  margin-top: 80px;
+  color: var(--pc-muted);
+  font-size: 0.9rem;
+}
+.pc-footer .footer-logo {
+  height: 52px;
+  width: auto;
+  display: block;
+}
+.pc-footer h6 {
+  font-family: var(--pc-font-sans) !important;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: var(--pc-dark);
+  margin-bottom: 16px;
+}
+.pc-footer a {
+  color: var(--pc-muted);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 8px;
+  transition: color 0.2s;
+}
+.pc-footer a:hover {
+  color: var(--pc-dark);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.delay-1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+.delay-2 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+.delay-3 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+.delay-4 {
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+/* Pagination */
+.pc-pagination .page-link {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  margin: 0 4px;
+  color: var(--pc-muted);
+  font-weight: 500;
+}
+.pc-pagination .page-item.active .page-link {
+  background-color: var(--pc-green);
+  color: white;
+}
+.pc-pagination .page-link:hover {
+  background-color: var(--pc-cream);
+  color: var(--pc-dark);
+}
+
+/* Progress bar */
+.pc-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pc-border);
+}
+.pc-progress .progress-bar {
+  background: linear-gradient(90deg, var(--pc-gold), #c09340);
+  border-radius: 3px;
+}
+
+/* Search input */
+.pc-search {
+  border-radius: 40px !important;
+  border: 2px solid var(--pc-border) !important;
+  padding: 14px 24px 14px 48px !important;
+  font-size: 1rem !important;
+  transition: border-color 0.3s ease;
+}
+.pc-search:focus {
+  border-color: var(--pc-gold) !important;
+  box-shadow: 0 0 0 3px rgba(214, 169, 91, 0.15) !important;
+}
+
+/* Ingredient detail card */
+.ingredient-result {
+  background: var(--pc-white);
+  border: 1px solid var(--pc-border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: all 0.25s ease;
+}
+.ingredient-result:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
