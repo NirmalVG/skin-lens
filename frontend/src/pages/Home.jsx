@@ -13,7 +13,7 @@ const Home = () => {
       leftDescription:
         "Unprocessed chemical nomenclature often hides potential biological risks.",
       rightDescription:
-        "PureCheck AI cross-references clinical trials to provide actionable health advice.",
+        "Skin Lens cross-references clinical trials to provide actionable health advice.",
       fillPercent: 70,
     },
     {
@@ -168,7 +168,7 @@ const Home = () => {
                     fontSize: "0.72rem",
                   }}
                 >
-                  PureCheck™ Insights
+                  Skin Lens™ Insights
                 </small>
                 <div
                   className="mt-1"

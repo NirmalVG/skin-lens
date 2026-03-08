@@ -101,7 +101,7 @@ const Encyclopedia = () => {
     <div className="fade-in-up">
       {/* Header */}
       <section
-        className="text-center py-5 mt-5 bg-pc-white"
+        className="text-center py-5 bg-pc-white"
         style={{ paddingBottom: 40 }}
       >
         <Container>
