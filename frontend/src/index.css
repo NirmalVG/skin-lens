@@ -1,4 +1,4 @@
-/* Skin Lens - Custom Overrides on top of Bootstrap */
+/* PureCheck AI - Custom Overrides on top of Bootstrap */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap");
 
@@ -61,7 +61,7 @@ h4 {
   color: var(--pc-dark) !important;
 }
 .pc-navbar .navbar-logo {
-  height: 45px;
+  height: 66px;
   width: auto;
   display: block;
 }
@@ -277,7 +277,7 @@ h4 {
   font-size: 0.9rem;
 }
 .pc-footer .footer-logo {
-  height: 36px;
+  height: 52px;
   width: auto;
   display: block;
 }
