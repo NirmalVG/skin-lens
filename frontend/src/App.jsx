@@ -35,7 +35,7 @@ const AppNavbar = () => {
     >
       <Container>
         <Navbar.Brand as={Link} to="/" onClick={() => setExpanded(false)}>
-          <img src="/logo.png" alt="Skin Lens" className="navbar-logo" />
+          <img src="/logo.webp" alt="Skin Lens" className="navbar-logo" />
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="main-nav" />
         <Navbar.Collapse id="main-nav">
@@ -66,7 +66,7 @@ const Footer = () => {
         <div className="row">
           <div className="col-md-4 mb-4">
             <Link to="/" className="d-inline-block mb-3">
-              <img src="/logo.png" alt="Skin Lens" className="footer-logo" />
+              <img src="/logo.webp" alt="Skin Lens" className="footer-logo" />
             </Link>
             <p style={{ maxWidth: 300 }}>
               The world's most sophisticated cosmetic ingredient analyzer.

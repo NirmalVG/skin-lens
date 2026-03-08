@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Pagination } from "react-bootstrap";
+import { Container, Row, Col, Pagination, Modal } from "react-bootstrap";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -28,9 +28,34 @@ const Encyclopedia = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showClinicalModal, setShowClinicalModal] = useState(false);
+  const [selectedIngredient, setSelectedIngredient] = useState(null);
 
   // Filters
   const [riskFilter, setRiskFilter] = useState("");
+
+  const openClinicalDetails = (ingredient) => {
+    setSelectedIngredient(ingredient);
+    setShowClinicalModal(true);
+  };
+
+  const closeClinicalDetails = () => {
+    setShowClinicalModal(false);
+    setSelectedIngredient(null);
+  };
+
+  const clinicalSummaryForRating = (rating) => {
+    const r = (rating || "").toLowerCase();
+    if (r === "safe")
+      return "Generally well-tolerated in leave‑on and rinse‑off formulas when used as directed.";
+    if (r === "moderate")
+      return "Use with some caution, especially on very sensitive or barrier‑impaired skin.";
+    if (r === "irritant")
+      return "More likely to cause stinging, dryness, or redness—especially with frequent use.";
+    if (r === "avoid")
+      return "Best avoided when possible; higher likelihood of irritation or other concerns.";
+    return "Clinical profile varies by concentration, formulation, and individual tolerance.";
+  };
 
   const fetchIngredients = async (searchQuery, pg, riskLevel) => {
     setLoading(true);
@@ -226,6 +251,7 @@ const Encyclopedia = () => {
                               color: "var(--pc-muted)",
                               cursor: "pointer",
                             }}
+                            onClick={() => openClinicalDetails(ing)}
                           ></i>
                         </div>
                         <h6
@@ -279,7 +305,10 @@ const Encyclopedia = () => {
                           {ing.description?.length > 100 ? "..." : ""}
                         </p>
 
-                        <button className="btn btn-sm btn-pc-secondary w-100">
+                        <button
+                          className="btn btn-sm btn-pc-secondary w-100"
+                          onClick={() => openClinicalDetails(ing)}
+                        >
                           Clinical Details
                         </button>
                       </div>
@@ -350,6 +379,80 @@ const Encyclopedia = () => {
           </Col>
         </Row>
       </Container>
+
+      <Modal
+        show={showClinicalModal}
+        onHide={closeClinicalDetails}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--pc-font-serif)",
+                fontSize: "1.25rem",
+                lineHeight: 1.2,
+              }}
+            >
+              {selectedIngredient?.name || "Clinical Details"}
+            </div>
+            {selectedIngredient && (
+              <div className="d-flex flex-wrap gap-2 mt-2">
+                <span
+                  className={`badge rounded-pill ${getBadgeClass(selectedIngredient.safety_rating)}`}
+                >
+                  {selectedIngredient.safety_rating || "Unknown"}
+                </span>
+                <span className="badge rounded-pill bg-light text-dark border">
+                  {selectedIngredient.compatible_skin_types || "All skin types"}
+                </span>
+              </div>
+            )}
+          </div>
+        </Modal.Header>
+        <Modal.Body>
+          {!selectedIngredient ? (
+            <p className="mb-0" style={{ color: "var(--pc-muted)" }}>
+              No ingredient selected.
+            </p>
+          ) : (
+            <>
+              <p style={{ color: "var(--pc-muted)" }}>
+                {selectedIngredient.description ||
+                  "No description available for this ingredient yet."}
+              </p>
+
+              <hr style={{ borderColor: "var(--pc-border)" }} />
+
+              <h6
+                style={{
+                  fontFamily: "var(--pc-font-serif)",
+                  marginBottom: 10,
+                }}
+              >
+                Clinical interpretation
+              </h6>
+              <ul style={{ color: "var(--pc-muted)", fontSize: "0.92rem" }}>
+                <li>
+                  <strong>Risk level</strong>:{" "}
+                  {selectedIngredient.safety_rating || "Unknown"} —{" "}
+                  {clinicalSummaryForRating(selectedIngredient.safety_rating)}
+                </li>
+                <li>
+                  <strong>Compatible skin types</strong>:{" "}
+                  {selectedIngredient.compatible_skin_types || "All"}
+                </li>
+                <li>
+                  <strong>Routine guidance</strong>: Patch test new products and
+                  avoid stacking multiple potentially irritating actives in the
+                  same routine.
+                </li>
+              </ul>
+            </>
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

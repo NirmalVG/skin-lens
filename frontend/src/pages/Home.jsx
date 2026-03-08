@@ -102,7 +102,7 @@ const Home = () => {
               className="text-center fade-in-up delay-2 order-2 order-lg-2 hero-image-col"
             >
               <img
-                src="/bottle.png"
+                src="/bottle.webp"
                 alt="Premium Cosmetic Bottle"
                 className="img-fluid"
                 style={{
