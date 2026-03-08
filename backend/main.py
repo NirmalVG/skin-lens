@@ -17,6 +17,7 @@ app = FastAPI(title="PureCheck AI API")
 
 origins = [
     "http://localhost:5173",
+    "https://skin-lens.netlify.app"
 ]
 
 app.add_middleware(
