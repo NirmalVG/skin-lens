@@ -1,8 +1,5 @@
-
-import os
 from dotenv import load_dotenv
 load_dotenv()
-from sqlalchemy import create_engine
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -26,19 +23,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],    
     allow_headers=["*"],    
-)
-
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not SQLALCHEMY_DATABASE_URL:
-    raise ValueError("SQLALCHEMY_DATABASE_URL not found in environment variables")
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    pool_size=2, 
-    max_overflow=0,
-    pool_recycle=300,
-    pool_pre_ping=True
 )
 
 @app.get("/api/ingredients/search")

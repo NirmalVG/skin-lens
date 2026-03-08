@@ -2,6 +2,7 @@ import os
 import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,11 +22,9 @@ engine = create_engine(
             "verify_mode": 0
         }
     },
-    pool_size=2,       
-    max_overflow=1,     
-    pool_recycle=300,   
-    pool_pre_ping=True  
+    poolclass=NullPool  
 )
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

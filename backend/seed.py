@@ -1,3 +1,4 @@
+from sqlalchemy.pool import NullPool
 import time
 
 from sqlalchemy.orm import Session
@@ -16,6 +17,12 @@ RATING_MAP = {
 
 BATCH_SIZE = 25
 MAX_RETRIES = 3
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"ssl": {"check_hostname": False, "verify_mode": 0}},
+    poolclass=NullPool  # Closes connection immediately after each use
+)
 
 
 def seed_ingredients():
