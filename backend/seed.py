@@ -1,12 +1,31 @@
 from sqlalchemy.pool import NullPool
+from sqlalchemy import create_engine
+import os
+import re
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 
-from database import Base, engine, SessionLocal
+from database import Base, SessionLocal
 import models
 from ingredients_data import INGREDIENTS
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+if SQLALCHEMY_DATABASE_URL.startswith("mysql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+
+SQLALCHEMY_DATABASE_URL = re.sub(r'[?&]ssl[_-]mode=\w+', '', SQLALCHEMY_DATABASE_URL)
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"ssl": {"check_hostname": False, "verify_mode": 0}},
+    poolclass=NullPool
+)
 
 RATING_MAP = {
     "Safe": models.SafetyRating.SAFE,
