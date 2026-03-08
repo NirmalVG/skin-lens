@@ -144,4 +144,3 @@ def get_recommendations(skin_type: str = Form(...), sensitivities: str = Form(..
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
