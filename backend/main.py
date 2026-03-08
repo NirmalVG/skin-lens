@@ -40,24 +40,26 @@ def search_ingredients(
     if query:
         qs = qs.filter(Ingredient.name.ilike(f"%{query}%"))
 
-    if risk and risk.strip(): 
-    # Everything inside this block MUST be indented further right
-        all_items = [i for i in qs.all() if i.safety_rating.value.lower() == risk.lower()]
-        total = len(all_items)
-        items = all_items[offset:offset + limit]
+    if risk and risk.strip():
+        rating_map = {r.value: r for r in SafetyRating}
+        matched_enum = rating_map.get(risk)
+        if matched_enum:
+            qs = qs.filter(Ingredient.safety_rating == matched_enum)
         
-        # Return early
+        total = qs.count()
+        items = qs.offset(offset).limit(limit).all()
+        
         return {
             "items": [
                 {
-                    "id": i.id, 
-                    "name": i.name, 
+                    "id": i.id,
+                    "name": i.name,
                     "safety_rating": i.safety_rating.value,
-                    "description": i.description, 
+                    "description": i.description,
                     "compatible_skin_types": i.compatible_skin_types
                 } for i in items
             ],
-            "total": total, 
+            "total": total,
             "page": page,
             "pages": (total // limit) + (1 if total % limit > 0 else 0)
         }
