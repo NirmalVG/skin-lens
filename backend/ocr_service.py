@@ -1,14 +1,39 @@
 import requests
 import re
 import os
+from PIL import Image
+import io
 
-OCR_API_KEY = os.getenv("OCR_API_KEY", "helloworld")  # helloworld is OCR.space's free demo key
+OCR_API_KEY = os.getenv("OCR_API_KEY", "helloworld")
+
+def preprocess_image(image_bytes: bytes) -> bytes:
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Convert to RGB (handles HEIC, PNG, etc.)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Resize if too large — OCR.space has 1MB limit
+        max_size = (1800, 1800)
+        image.thumbnail(max_size, Image.LANCZOS)
+        
+        # Save as compressed JPEG
+        output = io.BytesIO()
+        image.save(output, format='JPEG', quality=85)
+        return output.getvalue()
+    except Exception as e:
+        print(f"Preprocessing error: {e}")
+        return image_bytes  # Return original if preprocessing fails
 
 def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
     try:
+        # Preprocess image before sending
+        processed_bytes = preprocess_image(image_bytes)
+
         response = requests.post(
             "https://api.ocr.space/parse/image",
-            files={"file": ("image.jpg", image_bytes, "image/jpeg")},
+            files={"file": ("image.jpg", processed_bytes, "image/jpeg")},
             data={
                 "apikey": OCR_API_KEY,
                 "language": "eng",
@@ -16,7 +41,7 @@ def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
                 "detectOrientation": True,
                 "scale": True,
                 "isTable": False,
-                "OCREngine": 2  # Engine 2 is better for complex images
+                "OCREngine": 2
             }
         )
 
@@ -27,7 +52,6 @@ def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
             print(f"OCR Error: {result.get('ErrorMessage')}")
             return []
 
-        # Extract full text
         parsed_results = result.get("ParsedResults", [])
         if not parsed_results:
             return []
@@ -35,7 +59,6 @@ def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
         full_text = parsed_results[0].get("ParsedText", "")
         print(f"[DEBUG] Full text: {full_text}")
 
-        # Find ingredients section
         if 'ingredient' in full_text.lower():
             idx = full_text.lower().find('ingredient')
             full_text = full_text[idx:]
@@ -43,17 +66,14 @@ def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
             if colon != -1:
                 full_text = full_text[colon + 1:]
 
-        # Normalize separators
         full_text = full_text.replace('\n', ',').replace('\r', ',').replace(';', ',')
 
-        # Split and clean
         parsed = []
         for ing in full_text.split(','):
             c = re.sub(r'[^a-zA-Z0-9\-\s\(\)]', '', ing).strip().title()
             if len(c) > 2:
                 parsed.append(c)
 
-        # Remove duplicates
         seen = set()
         unique_parsed = []
         for i in parsed:
