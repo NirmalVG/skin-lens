@@ -18,9 +18,13 @@ engine = create_engine(
     connect_args={
         "ssl": {
             "check_hostname": False,
-            "verify_mode": 0 
+            "verify_mode": 0
         }
-    }
+    },
+    pool_size=2,       
+    max_overflow=1,     
+    pool_recycle=300,   
+    pool_pre_ping=True  
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
