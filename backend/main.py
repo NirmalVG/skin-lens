@@ -28,6 +28,11 @@ app.add_middleware(
     allow_headers=["*"],    
 )
 
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, 
+    connect_args={"ssl": {"ca": "/etc/ssl/certs/ca-certificates.crt"}} 
+)
+
 @app.get("/api/ingredients/search")
 def search_ingredients(
     query: str = "",
@@ -43,10 +48,8 @@ def search_ingredients(
     if query:
         qs = qs.filter(Ingredient.name.ilike(f"%{query}%"))
 
-    if risk:
-    # Skip ORM enum comparison entirely — use raw SQL string match
-        from sqlalchemy import text
-        all_items = [i for i in qs.all() if i.safety_rating.value == risk]
+    if risk and risk.strip(): 
+    all_items = [i for i in qs.all() if i.safety_rating.value.lower() == risk.lower()]
         total = len(all_items)
         items = all_items[offset:offset + limit]
         # Return early
