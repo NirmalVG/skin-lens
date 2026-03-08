@@ -34,8 +34,11 @@ if not SQLALCHEMY_DATABASE_URL:
     raise ValueError("SQLALCHEMY_DATABASE_URL not found in environment variables")
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"ssl": {"ca": "/etc/ssl/certs/ca-certificates.crt"}}
+    SQLALCHEMY_DATABASE_URL,
+    pool_size=2, 
+    max_overflow=0,
+    pool_recycle=300,
+    pool_pre_ping=True
 )
 
 @app.get("/api/ingredients/search")
