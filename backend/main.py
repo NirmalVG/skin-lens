@@ -1,8 +1,8 @@
 
-
+import os
 from dotenv import load_dotenv
 load_dotenv()
-from sqlalchemy import cast, String
+from sqlalchemy import create_engine
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from database import get_db, Base, engine
 from models import Ingredient, SafetyRating
 from ocr_service import extract_ingredients_from_image
 
-app = FastAPI(title="PureCheck AI API")
+app = FastAPI(title="Skin Lens API")
 
 origins = [
     "http://localhost:5173",
@@ -28,9 +28,14 @@ app.add_middleware(
     allow_headers=["*"],    
 )
 
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("SQLALCHEMY_DATABASE_URL not found in environment variables")
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, 
-    connect_args={"ssl": {"ca": "/etc/ssl/certs/ca-certificates.crt"}} 
+    connect_args={"ssl": {"ca": "/etc/ssl/certs/ca-certificates.crt"}}
 )
 
 @app.get("/api/ingredients/search")
@@ -49,17 +54,26 @@ def search_ingredients(
         qs = qs.filter(Ingredient.name.ilike(f"%{query}%"))
 
     if risk and risk.strip(): 
-    all_items = [i for i in qs.all() if i.safety_rating.value.lower() == risk.lower()]
+    # Everything inside this block MUST be indented further right
+        all_items = [i for i in qs.all() if i.safety_rating.value.lower() == risk.lower()]
         total = len(all_items)
         items = all_items[offset:offset + limit]
+        
         # Return early
         return {
-            "items": [{"id": i.id, "name": i.name, "safety_rating": i.safety_rating.value,
-                    "description": i.description, "compatible_skin_types": i.compatible_skin_types}
-                    for i in items],
-            "total": total, "page": page,
+            "items": [
+                {
+                    "id": i.id, 
+                    "name": i.name, 
+                    "safety_rating": i.safety_rating.value,
+                    "description": i.description, 
+                    "compatible_skin_types": i.compatible_skin_types
+                } for i in items
+            ],
+            "total": total, 
+            "page": page,
             "pages": (total // limit) + (1 if total % limit > 0 else 0)
-    }
+        }
 
     total = qs.count()
     items = qs.offset(offset).limit(limit).all()
