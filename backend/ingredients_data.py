@@ -1,7 +1,20 @@
-"""350 skincare ingredients for database seeding."""
+"""
+350 skincare ingredients for database seeding.
 
-# SafetyRating: SAFE, MODERATE, IRRITANT, AVOID
-# compatible_skin_types: "All", "Oily", "Dry", "Combination", "Sensitive", etc.
+This list acts as the initial 'Brain' for the Skin Lens app. 
+It maps raw chemical names to:
+1. Safety Ratings (Safe, Moderate, Irritant, Avoid)
+2. Clinical Descriptions (What it actually does)
+3. Skin Type Compatibility (Who should use it)
+"""
+
+# ------------------------------------------------------------------
+# KEY LEGEND:
+# "name": The string found on the bottle label (e.g., "Glycerin")
+# "safety_rating": The clinical verdict (Mapped to the SafetyRating Enum)
+# "description": A short, user-friendly explanation of the chemical.
+# "compatible_skin_types": A string filter for the Quiz/Recommendation engine.
+# ------------------------------------------------------------------
 
 INGREDIENTS = [
     # Humectants
