@@ -196,3 +196,12 @@ def get_recommendations(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    // If no SW should be active, clean up
+    if (registrations.length > 1) {
+      registrations.slice(1).forEach(reg => reg.unregister());
+    }
+  });
+}
