@@ -1,74 +1,77 @@
 from dotenv import load_dotenv
-load_dotenv()  # Loads environment variables (like DB passwords) from the .env file
+load_dotenv()  # Loads environment variables (like secret keys) from the .env file
 
-# Import necessary tools from FastAPI and SQLAlchemy
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc
 from typing import List
 
-# Import local modules (your own files)
+# Import your custom configurations and logic
 from database import get_db, Base, engine
 from models import Ingredient, SafetyRating
 from ocr_service import extract_ingredients_from_image
 
-# Initialize the API application
+# 1. INITIALIZE THE APP
 app = FastAPI(title="Skin Lens API")
 
-# Define who is allowed to talk to this backend
-# We allow localhost (for testing) and Netlify (for the live site)
+# 2. CORS (Cross-Origin Resource Sharing)
+# Browsers block requests between different websites for security.
+# This list tells FastAPI: "It is safe to accept requests from my local React app AND my live Netlify app."
 origins = [
     "http://localhost:5173",
     "https://skin-lens.netlify.app"
 ]
 
-# Add the "Security Guard" (CORS)
-# This middleware checks every incoming request to make sure it comes from a trusted origin
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins, 
     allow_credentials=True,
-    allow_methods=["*"],    # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allow all headers (Authentication, JSON, etc.)
+    allow_methods=["*"],   # Allows GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],   # Allows all headers (like Authorization tokens or JSON content types)
 )
 
-# ---------------------------------------------------------
-# ENDPOINT 1: SEARCH INGREDIENTS
-# Used by the frontend search bar to find chemicals manually
-# ---------------------------------------------------------
+
+
+# ==========================================
+# ROUTE 1: SEARCH & PAGINATION
+# ==========================================
 @app.get("/api/ingredients/search")
 def search_ingredients(
-    query: str = "",      # The text the user typed (e.g., "Niacin")
-    risk: str = "",       # Filter by safety (e.g., "Avoid")
-    page: int = 1,        # Current page number for pagination
-    db: Session = Depends(get_db) # Connect to the database
+    query: str = "",      # The search text (e.g., "Acid")
+    risk: str = "",       # Filter by safety rating (e.g., "Safe")
+    page: int = 1,        # Which page of results the user is on
+    db: Session = Depends(get_db) # Automatically opens and closes the DB connection
 ):
-    limit = 12  # How many items to show per page
-    offset = (page - 1) * limit # Calculate where to start reading in the DB
+    # PAGINATION MATH:
+    # If limit is 12, Page 1 skips 0 ((1-1)*12). Page 2 skips 12 ((2-1)*12).
+    limit = 12  
+    offset = (page - 1) * limit 
 
-    # Start building the database query
+    # Start a base query: "Select * from Ingredients"
     qs = db.query(Ingredient)
 
-    # 1. Text Filter: If the user typed something, search for it
-    # 'ilike' makes it case-insensitive (A = a) and % matches partial words
+    
+
+    # TEXT FILTER
     if query:
+        # ilike is case-insensitive. %query% matches the word anywhere in the string.
         qs = qs.filter(Ingredient.name.ilike(f"%{query}%"))
 
-    # 2. Risk Filter: If the user selected a risk category
+    # RISK FILTER
     if risk and risk.strip(): 
-        # Convert the string "Safe" into the actual Database Enum object
+        # Map the string (e.g., "Safe") to the actual Python Enum object
         rating_map = {r.value: r for r in SafetyRating}
         matched_enum = rating_map.get(risk)
         
         if matched_enum:
             qs = qs.filter(Ingredient.safety_rating == matched_enum)
         
-        # Calculate totals for pagination
+        # Count total matching rows to tell the frontend how many pages there are
         total = qs.count()
+        # Fetch only the 12 items for the current page
         items = qs.offset(offset).limit(limit).all()
         
-        # Return the filtered results immediately
         return {
             "items": [
                 {
@@ -81,11 +84,11 @@ def search_ingredients(
             ],
             "total": total,
             "page": page,
-            # Calculate total pages needed
+            # Math to calculate total pages: e.g., 25 items // 12 = 2 pages + 1 remainder = 3 pages total
             "pages": (total // limit) + (1 if total % limit > 0 else 0)
         }
 
-    # 3. Default Fetch: If no risk filter was applied, run the query here
+    # If no risk filter was used, do the same fetch and return here
     total = qs.count()
     items = qs.offset(offset).limit(limit).all()
 
@@ -102,44 +105,53 @@ def search_ingredients(
         "pages": (total // limit) + (1 if total % limit > 0 else 0)
     }
 
-# ---------------------------------------------------------
-# ENDPOINT 2: ANALYZE IMAGE
-# The core feature: Takes a photo -> OCR -> Database Match
-# ---------------------------------------------------------
+# ==========================================
+# ROUTE 2: THE "LENS" (OCR & AI FALLBACK)
+# ==========================================
 @app.post("/api/analyze/image")
 async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    # 1. Read the uploaded photo
     bytes_data = await file.read()
     
-    # Gemini returns fully analyzed ingredients directly
+    # 2. Send to your OCR/AI service. 
+    # (Note: This now expects a list of dictionaries back, containing AI-generated safety ratings!)
     ingredients = extract_ingredients_from_image(bytes_data)
     
+    # Fail-safe: If the image was blurry or contained no text
     if not ingredients:
         raise HTTPException(status_code=422, detail="No ingredients found in image")
     
     results = []
+    
+    # 3. CROSS-REFERENCE LOOP
     for ing in ingredients:
-        # Check DB first
+        # Check if the ingredient exists in our strict, clinical MySQL database
         matched = db.query(Ingredient).filter(
             Ingredient.name.ilike(f"%{ing['name']}%")
         ).first()
         
+        
+
         if matched:
+            # SCENARIO A: Found in Database. Use our verified clinical data.
             results.append({
                 "name": matched.name,
                 "safety_rating": matched.safety_rating.value,
                 "description": matched.description,
                 "compatible_skin_types": matched.compatible_skin_types,
-                "source": "database"
+                "source": "database" # Tag to let the frontend know this is highly verified
             })
         else:
+            # SCENARIO B: Not in Database. Rely on the AI's best guess from the OCR service.
             results.append({
                 "name": ing["name"],
                 "safety_rating": ing["safety_rating"],
                 "description": ing["description"],
                 "compatible_skin_types": ing["compatible_skin_types"],
-                "source": "ai"
+                "source": "ai" # Tag to let the frontend know this is AI-generated
             })
 
+    # 4. Generate the Summary Statistics for the Dashboard Charts
     avoid_count = sum(1 for r in results if r["safety_rating"] == "Avoid")
     irritant_count = sum(1 for r in results if r["safety_rating"] == "Irritant")
     moderate_count = sum(1 for r in results if r["safety_rating"] == "Moderate")
@@ -153,30 +165,29 @@ async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_
             "irritant": irritant_count,
             "moderate": moderate_count,
             "safe": safe_count,
-            "unknown": 0
+            "unknown": 0 # Since we use AI fallback, we no longer have "unknowns"!
         }
     }
-# ---------------------------------------------------------
-# ENDPOINT 3: SKIN QUIZ
-# Recommends ingredients based on user skin type
-# ---------------------------------------------------------
+
+# ==========================================
+# ROUTE 3: QUIZ RECOMMENDATIONS
+# ==========================================
 @app.post("/api/quiz/recommendations")
 def get_recommendations(
-    skin_type: str = Form(...),      # e.g., "Oily", "Dry"
-    sensitivities: str = Form(...),  # e.g., "Acne", "None"
+    skin_type: str = Form(...),    # Data comes from an HTML Form submission 
+    sensitivities: str = Form(...), 
     db: Session = Depends(get_db)
 ):
-    # 1. Start by finding ONLY ingredients marked as SAFE
+    # Rule 1: Only recommend 100% Safe ingredients
     qs = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.SAFE)
     
-    # 2. Filter for ingredients compatible with the user's specific skin type
-    # OR ingredients that work for "All" skin types
+    # Rule 2: Must match the user's skin type OR be suitable for "All" skin types
     qs = qs.filter(or_(
         Ingredient.compatible_skin_types.ilike(f"%{skin_type}%"),
         Ingredient.compatible_skin_types.ilike("%All%")
     ))
     
-    # 3. Get the top 5 results
+    # Fetch top 5 recommendations
     top_ingredients = qs.limit(5).all()
     
     return {
@@ -189,10 +200,11 @@ def get_recommendations(
         ]
     }
 
-# ---------------------------------------------------------
-# ENDPOINT 4: HEALTH CHECK
-# Used by Render to check if the server is alive
-# ---------------------------------------------------------
+# ==========================================
+# ROUTE 4: HEALTH CHECK
+# ==========================================
+# Cloud platforms (like Render) constantly ping this URL. 
+# If it doesn't return 200 OK, the platform assumes the server crashed and restarts it.
 @app.get("/health")
 def health():
     return {"status": "ok"}
