@@ -238,7 +238,9 @@ const Analyze = () => {
                 </div>
               )}
 
-              {results && (
+              {results &&
+              results.ingredients &&
+              results.ingredients.length > 0 ? (
                 <div className="fade-in-up">
                   <div className="d-flex justify-content-between align-items-center mb-4">
                     <h3 style={{ fontSize: "1.8rem" }}>Health Breakdown</h3>
@@ -246,7 +248,6 @@ const Analyze = () => {
                       {results.ingredients.length} COMPONENTS
                     </small>
                   </div>
-
                   {results.ingredients.map((ing, idx) => (
                     <div
                       key={idx}
@@ -303,6 +304,19 @@ const Analyze = () => {
                     </div>
                   ))}
                 </div>
+              ) : (
+                results && (
+                  <div className="text-center py-5">
+                    <i
+                      className="bi bi-exclamation-circle fs-1 mb-3 d-block"
+                      style={{ color: "var(--pc-gold)" }}
+                    ></i>
+                    <h5>No ingredients found</h5>
+                    <p style={{ color: "var(--pc-muted)" }}>
+                      Try a clearer photo of the ingredient list on the label.
+                    </p>
+                  </div>
+                )
               )}
             </Col>
           </Row>
