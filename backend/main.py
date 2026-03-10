@@ -108,54 +108,54 @@ def search_ingredients(
 # ---------------------------------------------------------
 @app.post("/api/analyze/image")
 async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    # 1. Read the raw image file uploaded by the user
     bytes_data = await file.read()
     
-    # 2. Send image to OCR Service to get a list of text strings (e.g., ["Aqua", "Glycerin"])
-    extracted_names = extract_ingredients_from_image(bytes_data)
+    # Gemini returns fully analyzed ingredients directly
+    ingredients = extract_ingredients_from_image(bytes_data)
+    
+    if not ingredients:
+        raise HTTPException(status_code=422, detail="No ingredients found in image")
     
     results = []
-    
-    # 3. Loop through every word found by the OCR
-    for name in extracted_names:
-        # Check if this word exists in our SQL Database
-        matched = db.query(Ingredient).filter(Ingredient.name.ilike(f"%{name}%")).first()
+    for ing in ingredients:
+        # Check DB first
+        matched = db.query(Ingredient).filter(
+            Ingredient.name.ilike(f"%{ing['name']}%")
+        ).first()
         
         if matched:
-            # If found, add the clinical details (Safety, Description)
             results.append({
                 "name": matched.name,
                 "safety_rating": matched.safety_rating.value,
-                "description": matched.description
+                "description": matched.description,
+                "compatible_skin_types": matched.compatible_skin_types,
+                "source": "database"
             })
         else:
-            # If not found, mark it as Unknown
             results.append({
-                "name": name,
-                "safety_rating": "Unknown",
-                "description": "Not found in our clinical database."
+                "name": ing["name"],
+                "safety_rating": ing["safety_rating"],
+                "description": ing["description"],
+                "compatible_skin_types": ing["compatible_skin_types"],
+                "source": "ai"
             })
-            
-    # 4. Calculate Statistics (How many "Avoid", how many "Safe", etc.)
+
     avoid_count = sum(1 for r in results if r["safety_rating"] == "Avoid")
     irritant_count = sum(1 for r in results if r["safety_rating"] == "Irritant")
     moderate_count = sum(1 for r in results if r["safety_rating"] == "Moderate")
     safe_count = sum(1 for r in results if r["safety_rating"] == "Safe")
-    unknown_count = sum(1 for r in results if r["safety_rating"] == "Unknown")
-    
-    # 5. Return the full report to the frontend
+
     return {
         "ingredients": results,
-        "extracted_raw_count": len(extracted_names),
+        "extracted_raw_count": len(results),
         "summary": {
             "avoid": avoid_count,
             "irritant": irritant_count,
             "moderate": moderate_count,
             "safe": safe_count,
-            "unknown": unknown_count
+            "unknown": 0
         }
     }
-
 # ---------------------------------------------------------
 # ENDPOINT 3: SKIN QUIZ
 # Recommends ingredients based on user skin type
@@ -196,12 +196,3 @@ def get_recommendations(
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    // If no SW should be active, clean up
-    if (registrations.length > 1) {
-      registrations.slice(1).forEach(reg => reg.unregister());
-    }
-  });
-}

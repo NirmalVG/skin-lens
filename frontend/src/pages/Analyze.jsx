@@ -256,12 +256,12 @@ const Analyze = () => {
                       <div style={{ flex: 1 }}>
                         <div className="d-flex align-items-center gap-2 mb-1">
                           <strong style={{ fontSize: "1.05rem" }}>
-                            {ing.name}
+                            {String(ing.name)}
                           </strong>
                           <span
                             className={`badge rounded-pill ${getBadgeClass(ing.safety_rating)}`}
                           >
-                            {ing.safety_rating}
+                            {String(ing.safety_rating)}
                           </span>
                           {ing.safety_rating === "Safe" && (
                             <i
@@ -269,16 +269,32 @@ const Analyze = () => {
                               style={{ color: "var(--pc-safe)" }}
                             ></i>
                           )}
+                          {ing.source === "ai" && (
+                            <span
+                              className="badge rounded-pill bg-light text-dark border"
+                              style={{ fontSize: "0.65rem" }}
+                            >
+                              ✨ AI Analyzed
+                            </span>
+                          )}
                         </div>
                         <p
-                          className="mb-0"
+                          className="mb-1"
                           style={{
                             color: "var(--pc-muted)",
                             fontSize: "0.88rem",
                           }}
                         >
-                          {ing.description}
+                          {String(ing.description)}
                         </p>
+                        <small
+                          style={{
+                            color: "var(--pc-muted)",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          Compatible: {String(ing.compatible_skin_types)}
+                        </small>
                       </div>
                       <i
                         className="bi bi-info-circle ms-3"

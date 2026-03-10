@@ -1,132 +1,90 @@
-import requests
-import re
+from google import genai
+from google.genai import types
+import base64
+import json
 import os
-from PIL import Image  # "Pillow" library for image manipulation
-import io              # Handles byte streams (files in memory)
+from dotenv import load_dotenv
 
-# Load the API Key safely. If not found, use the free 'helloworld' key.
-OCR_API_KEY = os.getenv("OCR_API_KEY", "helloworld")
+load_dotenv()
 
-# ---------------------------------------------------------
-# 1. IMAGE PREPROCESSING
-# Why do we need this? 
-# The OCR API has limits (file size < 1MB, specific dimensions).
-# If a user uploads a 4K photo from an iPhone, it will be too big.
-# This function shrinks and compresses the image BEFORE sending it.
-# ---------------------------------------------------------
-def preprocess_image(image_bytes: bytes) -> bytes:
-    try:
-        # Convert raw bytes into a Python Image object
-        image = Image.open(io.BytesIO(image_bytes))
-        
-        # FIX: Convert PNG/HEIC to RGB. 
-        # JPEGs don't support "Alpha" (Transparency). If we don't do this, 
-        # saving a transparent PNG as JPEG will crash the app.
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        
-        # RESIZE: Shrink the image if it's huge.
-        # 1800x1800 is large enough to read text, but small enough for the API.
-        # Image.LANCZOS is a high-quality filter to keep text sharp during resizing.
-        max_size = (1800, 1800)
-        image.thumbnail(max_size, Image.LANCZOS)
-        
-        # COMPRESS: Save back to bytes as a compressed JPEG.
-        # Quality=85 reduces file size significantly without making text blurry.
-        output = io.BytesIO()
-        image.save(output, format='JPEG', quality=85)
-        return output.getvalue()
-    
-    except Exception as e:
-        print(f"Preprocessing error: {e}")
-        # Fail Safe: If optimization fails, just send the original image 
-        # and hope the API accepts it.
-        return image_bytes 
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# ---------------------------------------------------------
-# 2. THE MAIN OCR FUNCTION
-# Orchestrates the Upload -> Read -> Clean process.
-# ---------------------------------------------------------
-def extract_ingredients_from_image(image_bytes: bytes) -> list[str]:
-    try:
-        # Step 1: Optimize the image
-        processed_bytes = preprocess_image(image_bytes)
+def extract_ingredients_from_image(image_bytes: bytes) -> list[dict]:
+    models_to_try = [
+    "gemini-2.5-flash",        # best quality, try first
+    "gemini-2.5-pro",          # most powerful fallback
+    "gemini-2.0-flash",        # fast and reliable
+    "gemini-2.0-flash-lite",   # lightweight fallback
+    "gemini-flash-latest",     # always points to latest flash
+    "gemini-pro-latest",       # always points to latest pro
+    "gemini-flash-lite-latest",# lightest fallback
+]
+    for model_name in models_to_try:
+        try:
+            print(f"[DEBUG] Trying model: {model_name}")
+            print(f"[DEBUG] Image size: {len(image_bytes)} bytes")
 
-        # Step 2: Send to OCR.space API
-        # We use a POST request, simulating a file upload form.
-        response = requests.post(
-            "https://api.ocr.space/parse/image",
-            files={"file": ("image.jpg", processed_bytes, "image/jpeg")},
-            data={
-                "apikey": OCR_API_KEY,
-                "language": "eng",      # English
-                "isOverlayRequired": False,
-                "detectOrientation": True, # Auto-rotate if user took photo sideways
-                "scale": True,          # Auto-zoom if text is tiny
-                "isTable": False,
-                "OCREngine": 2          # Engine 2 is better for product labels/irregular text
-            }
-        )
+            if image_bytes[:4] == b'\x89PNG':
+                media_type = "image/png"
+            elif image_bytes[:3] == b'\xff\xd8\xff':
+                media_type = "image/jpeg"
+            else:
+                media_type = "image/jpeg"
 
-        result = response.json()
-        print(f"[DEBUG] OCR.space response: {result}")
+            prompt = """This is a cosmetic product label.
+Extract ALL ingredients and analyze each one.
+All values must be plain strings, not arrays or objects.
+compatible_skin_types must be a single string like "All" or "Oily, Dry".
 
-        # Step 3: Error Handling
-        if result.get("IsErroredOnProcessing"):
-            print(f"OCR Error: {result.get('ErrorMessage')}")
-            return []
+Return ONLY a JSON array, no extra text, no markdown:
+[
+  {
+    "name": "Ingredient Name",
+    "safety_rating": "Safe" or "Moderate" or "Irritant" or "Avoid",
+    "description": "One sentence clinical description",
+    "compatible_skin_types": "All" or "Oily" or "Dry" or "Sensitive" or "Combination"
+  }
+]
 
-        parsed_results = result.get("ParsedResults", [])
-        if not parsed_results:
-            return []
+If you cannot find an ingredients list in the image, return an empty array: []"""
 
-        # Get the raw text blob
-        full_text = parsed_results[0].get("ParsedText", "")
-        print(f"[DEBUG] Full text: {full_text}")
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(data=image_bytes, mime_type=media_type),
+                    prompt
+                ]
+            )
 
-        # -----------------------------------------------------
-        # Step 4: INTELLIGENT PARSING (The "Smart" Logic)
-        # -----------------------------------------------------
-        # Labels often have marketing fluff at the top ("New!", "Best Formula!").
-        # We look for the word "Ingredients:" and ignore everything before it.
-        if 'ingredient' in full_text.lower():
-            idx = full_text.lower().find('ingredient')
-            full_text = full_text[idx:] # Cut off the top part
-            
-            # Find the first colon ":" (e.g., "Ingredients: Water...")
-            colon = full_text.find(':')
-            if colon != -1:
-                full_text = full_text[colon + 1:] # Start reading AFTER the colon
+            raw = response.text.strip()
+            print(f"[DEBUG] Raw response: {raw[:300]}")
 
-        # Step 5: Normalization
-        # Ingredients can be separated by newlines, commas, or semicolons.
-        # We turn them all into commas to make splitting easy.
-        full_text = full_text.replace('\n', ',').replace('\r', ',').replace(';', ',')
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
 
-        parsed = []
-        for ing in full_text.split(','):
-            # Step 6: Regex Cleaning (Regular Expressions)
-            # Remove any character that IS NOT: a-z, A-Z, 0-9, hyphen, space, or parenthesis.
-            # This removes emojis, weird lines, or scanning artifacts.
-            c = re.sub(r'[^a-zA-Z0-9\-\s\(\)]', '', ing).strip().title()
-            
-            # Filter out tiny noise (e.g., "a", "1", ".")
-            if len(c) > 2:
-                parsed.append(c)
+            parsed = json.loads(raw.strip())
 
-        # Step 7: Remove Duplicates
-        # Use a 'set' to track what we've seen. 
-        # (e.g., prevent ["Water", "Water", "Glycerin"] -> ["Water", "Glycerin"])
-        seen = set()
-        unique_parsed = []
-        for i in parsed:
-            if i.lower() not in seen:
-                seen.add(i.lower())
-                unique_parsed.append(i)
+            # Normalize
+            normalized = []
+            for item in parsed:
+                if isinstance(item.get("name"), dict):
+                    item = item["name"]
+                normalized.append({
+                    "name": str(item.get("name", "Unknown")),
+                    "safety_rating": str(item.get("safety_rating", "Moderate")),
+                    "description": str(item.get("description", "")),
+                    "compatible_skin_types": ", ".join(item.get("compatible_skin_types", ["All"]))
+                    if isinstance(item.get("compatible_skin_types"), list)
+                    else str(item.get("compatible_skin_types", "All"))
+                })
 
-        print(f"[DEBUG] Parsed ingredients: {unique_parsed}")
-        return unique_parsed
+            print(f"[DEBUG] Parsed {len(normalized)} ingredients")
+            return normalized
 
-    except Exception as e:
-        print(f"OCR Error: {e}")
-        return []
+        except Exception as e:
+            print(f"[ERROR] Model {model_name} failed: {e}")
+            continue  # try next model
+
+    return []  # all models failed
