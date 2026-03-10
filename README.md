@@ -2,7 +2,7 @@
 
 **Clinical Precision AI for Skincare Ingredient Analysis**
 
-![Skin Lens Hero Image](./screenshots/hero.png)
+![Skin Lens Hero Image](public/images/homepage.png)
 _(Note: Place a wide, beautiful screenshot of your app here to serve as the banner)_
 
 Skin Lens is a full-stack, AI-powered web application designed to bring clinical transparency to the beauty industry. By leveraging advanced Computer Vision (OCR) and Large Language Models (Gemini Vision), the application allows users to upload a photo of any cosmetic label and instantly receive a detailed, scientifically-backed safety breakdown of its ingredients.
@@ -14,22 +14,22 @@ Skin Lens is a full-stack, AI-powered web application designed to bring clinical
 ### 1. The Home Interface
 
 The premium, minimalist landing page showcasing the "Chemical-to-Clear" AI capability.
-![Home Page](./screenshots/home.png)
+![Home Page](public/images/homepage.png)
 
 ### 2. AI Ingredient Scanner (The "Lens")
 
 Users can drag & drop or take a photo of a product label. The AI parses the image and cross-references the clinical database in real-time.
-![Analyze Page](./screenshots/analyze.png)
+![Analyze Page](public/images/analyzepage.png)
 
 ### 3. Clinical Encyclopedia
 
 A server-side paginated database of 350+ cosmetic ingredients. Users can search and filter by specific risk levels (Safe, Moderate, Irritant, Avoid).
-![Encyclopedia Page](./screenshots/encyclopedia.png)
+![Encyclopedia Page](public/images/incredientspage.png)
 
 ### 4. Interactive Skin Quiz
 
 A dynamic assessment tool that determines the user's skin profile and fetches mathematically calculated ingredient recommendations.
-![Quiz Page](./screenshots/quiz.png)
+![Quiz Page](public/images/quizpage.png)
 
 ---
 
