@@ -270,13 +270,9 @@ const Analyze = () => {
                               style={{ color: "var(--pc-safe)" }}
                             ></i>
                           )}
-                          {ing.source === "ai" && (
-                            <span
-                              className="badge rounded-pill bg-light text-dark border"
-                              style={{ fontSize: "0.65rem" }}
-                            >
-                              ✨ AI Analyzed
-                            </span>
+                          {(ing.source === "gemini" ||
+                            ing.source === "easyocr") && (
+                            <span className="badge ms-2">✨ AI Analyzed</span>
                           )}
                         </div>
                         <p
