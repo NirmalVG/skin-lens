@@ -212,11 +212,11 @@ const Analyze = () => {
                         "linear-gradient(transparent, rgba(26,38,30,0.9))",
                     }}
                   >
-                    <div className="d-flex align-items-center gap-2 mt-2">
+                    <div className="d-flex align-items-center gap-2 mt-2 w-100">
                       {/* Outer Track */}
                       <div
                         style={{
-                          width: "100%", // You can change this to 200px if you want a fixed width like the quiz
+                          flex: 1, // <-- CHANGED: This makes it responsive in a flex container
                           height: "8px",
                           background: "var(--pc-border)",
                           borderRadius: "99px",
@@ -236,12 +236,14 @@ const Analyze = () => {
                         ></div>
                       </div>
 
+                      {/* Percentage Text */}
                       <small
                         style={{
                           color: "var(--pc-muted)",
                           fontSize: "0.75rem",
                           minWidth: "35px",
                           textAlign: "right",
+                          flexShrink: 0, // <-- CHANGED: Prevents the text from getting squished on tiny screens
                         }}
                       >
                         {Math.round(scanProgress)}%
@@ -272,32 +274,61 @@ const Analyze = () => {
             <Col md={7}>
               {loading && !results && (
                 <div className="fade-in-up">
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 style={{ fontSize: "1.8rem" }}>
-                      <Skeleton width={240} height={30} />
+                  {/* Header Skeleton */}
+                  <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+                    <h3
+                      style={{
+                        fontSize: "1.8rem",
+                        margin: 0,
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <Skeleton
+                        width="100%"
+                        style={{ maxWidth: 240 }}
+                        height={30}
+                      />
                     </h3>
                     <small style={{ color: "var(--pc-muted)" }}>
                       <Skeleton width={100} height={18} />
                     </small>
                   </div>
 
+                  {/* List Items Skeleton */}
                   {[...Array(5)].map((_, idx) => (
                     <div
                       key={idx}
                       className="ingredient-result d-flex align-items-start justify-content-between fade-in-up"
                       style={{ animationDelay: `${idx * 0.05}s` }}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div className="d-flex align-items-center gap-2 mb-1">
-                          <Skeleton width={140} height={20} />
-                          <Skeleton width={60} height={24} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {" "}
+                        <div className="d-flex align-items-center flex-wrap gap-2 mb-2">
+                          <Skeleton
+                            width="40%"
+                            style={{ maxWidth: 140, minWidth: 100 }}
+                            height={20}
+                          />
+                          <Skeleton
+                            width={60}
+                            height={24}
+                            className="rounded-pill"
+                          />
                           <Skeleton circle width={18} height={18} />
                           <Skeleton width={90} height={20} />
                         </div>
                         <Skeleton width="100%" height={14} className="mb-1" />
-                        <Skeleton width="70%" height={12} />
+                        <Skeleton
+                          width="85%"
+                          height={14}
+                          className="mb-1 d-none d-md-block"
+                        />{" "}
+                        <Skeleton width="60%" height={12} />
                       </div>
-                      <Skeleton width={24} height={24} />
+
+                      <div className="ms-3 flex-shrink-0 mt-1">
+                        <Skeleton circle width={24} height={24} />
+                      </div>
                     </div>
                   ))}
                 </div>

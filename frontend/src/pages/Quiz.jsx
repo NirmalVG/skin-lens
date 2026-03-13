@@ -340,8 +340,19 @@ const Quiz = () => {
         <Container className="py-5">
           {/* Header skeleton */}
           <div className="text-center mb-5">
-            <Skeleton width={300} height={48} className="mx-auto mb-3" />
-            <Skeleton width={400} height={20} className="mx-auto" />
+            {/* Use 100% width with a maxWidth to shrink on small screens */}
+            <Skeleton
+              width="100%"
+              height={48}
+              style={{ maxWidth: 300 }}
+              className="mx-auto mb-3"
+            />
+            <Skeleton
+              width="100%"
+              height={20}
+              style={{ maxWidth: 400 }}
+              className="mx-auto"
+            />
           </div>
 
           {/* Skin type card skeleton */}
@@ -354,16 +365,30 @@ const Quiz = () => {
                   height={80}
                   className="mx-auto mb-3"
                 />
-                <Skeleton width={200} height={28} className="mx-auto mb-3" />
-                <Skeleton width={350} height={16} className="mx-auto mb-2" />
-                <Skeleton width={250} height={14} className="mx-auto" />
+                <Skeleton
+                  width="100%"
+                  height={28}
+                  style={{ maxWidth: 200 }}
+                  className="mx-auto mb-3"
+                />
+                {/* Use percentages for paragraph lines so they flex with the card size */}
+                <Skeleton width="80%" height={16} className="mx-auto mb-2" />
+                <Skeleton width="60%" height={14} className="mx-auto" />
               </div>
             </Col>
           </Row>
 
           {/* Recommendations section skeleton */}
           <div className="mt-5">
-            <Skeleton width={400} height={32} className="mx-auto  mb-4" />
+            {/* Wrapped the header skeleton in a text-center div for proper alignment on mobile */}
+            <div className="text-center mb-4">
+              <Skeleton
+                width="100%"
+                height={32}
+                style={{ maxWidth: 400 }}
+                className="mx-auto"
+              />
+            </div>
             <Row className="g-3 justify-content-center">
               {[1, 2, 3].map((idx) => (
                 <Col md={4} key={idx}>
@@ -372,6 +397,7 @@ const Quiz = () => {
                       <Skeleton circle width={20} height={20} />
                       <Skeleton width="70%" height={18} />
                     </div>
+                    {/* The percentages here were already perfectly responsive! */}
                     <Skeleton width="90%" height={14} className="mb-1" />
                     <Skeleton width="80%" height={14} className="mb-1" />
                     <Skeleton width="60%" height={14} />
@@ -383,6 +409,7 @@ const Quiz = () => {
 
           {/* Button skeleton */}
           <div className="text-center mt-5">
+            {/* 150px is safe to keep hardcoded since mobile screens are much wider than 150px */}
             <Skeleton width={150} height={44} className="mx-auto rounded" />
           </div>
         </Container>

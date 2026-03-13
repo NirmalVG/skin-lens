@@ -127,7 +127,6 @@ const Footer = () => {
           </div>
           <div className="col-md-2 mb-4">
             <h6>Company</h6>
-            <Link to="/">Science Board</Link>
             <Link to="/">Privacy Policy</Link>
             <Link to="/">Terms of Service</Link>
           </div>
