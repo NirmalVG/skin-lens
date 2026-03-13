@@ -86,7 +86,9 @@ const Quiz = () => {
   const [retaking, setRetaking] = useState(false)
 
   const q = quizData[currentQ]
-  const progress = ((currentQ + 1) / quizData.length) * 100
+
+  const answeredProgress =
+    ((currentQ + (answered ? 1 : 0)) / quizData.length) * 100
 
   const handleSelect = (idx) => {
     if (answered) return
@@ -437,6 +439,16 @@ const Quiz = () => {
     )
   }
 
+  const getProgressColor = (percent) => {
+    // We use strict equals and less-than-or-equals to catch every step
+    if (percent === 0) return "#eef7f9" // 0%: Very light tint
+    if (percent <= 20) return "#79a6b1" // 20%: Teal
+    if (percent <= 40) return "#8ab394" // 40%: Mint
+    if (percent <= 60) return "#d98a28" // 60%: Orange
+    if (percent <= 80) return "#2f8e52" // 80%: Safe Green
+    return "#1a201c" // 100%: Dark Forest
+  }
+
   return (
     <div
       className="fade-in-up"
@@ -456,11 +468,35 @@ const Quiz = () => {
             >
               Question {currentQ + 1} of {quizData.length}
             </small>
-            <div className="pc-progress mt-2" style={{ width: 200 }}>
+            <div className="d-flex align-items-center gap-2 mt-2">
+              {/* Outer Track */}
               <div
-                className="progress-bar"
-                style={{ width: `${progress}%`, transition: "width 0.5s" }}
-              ></div>
+                style={{
+                  width: 200,
+                  height: "8px",
+                  background: "var(--pc-border)",
+                  borderRadius: "99px",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Inner Fill (The animated part) */}
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: "99px",
+                    width: `${answeredProgress}%`,
+                    backgroundColor: getProgressColor(answeredProgress),
+                    boxShadow: "0 0 8px rgba(121, 166, 177, 0.4)",
+                    // This line forces the browser to animate both width AND color
+                    transition:
+                      "width 0.5s ease-in-out, background-color 0.5s ease-in-out",
+                  }}
+                ></div>
+              </div>
+
+              <small style={{ color: "var(--pc-muted)", fontSize: "0.75rem" }}>
+                {Math.round(answeredProgress)}%
+              </small>
             </div>
           </div>
           <div className="text-end">

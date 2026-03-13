@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { Container, Row, Col, Pagination, Modal } from "react-bootstrap"
 import Skeleton from "react-loading-skeleton"
 import "react-loading-skeleton/dist/skeleton.css"
@@ -32,7 +32,7 @@ const Encyclopedia = () => {
   const [loading, setLoading] = useState(false)
   const [showClinicalModal, setShowClinicalModal] = useState(false)
   const [selectedIngredient, setSelectedIngredient] = useState(null)
-
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
   // Filters
   const [riskFilter, setRiskFilter] = useState("")
 
@@ -59,12 +59,13 @@ const Encyclopedia = () => {
     return "Clinical profile varies by concentration, formulation, and individual tolerance."
   }
 
-  const fetchIngredients = async (searchQuery, pg, riskLevel) => {
+  const fetchIngredients = useCallback(async (searchQuery, pg, riskLevel) => {
     setLoading(true)
     try {
-      // We trim the riskLevel to ensure no extra spaces are sent
-      const cleanRisk = riskLevel.trim()
-      const url = `${API}/api/ingredients/search?query=${encodeURIComponent(searchQuery)}&page=${pg}&risk=${cleanRisk}`
+      let url = `${API}/api/ingredients/search?query=${encodeURIComponent(searchQuery)}&page=${pg}`
+      if (riskLevel && riskLevel.trim()) {
+        url += `&risk=${encodeURIComponent(riskLevel)}`
+      }
 
       console.log("SENDING REQUEST TO:", url) // Open F12 console to see this!
 
@@ -78,25 +79,25 @@ const Encyclopedia = () => {
       console.error("Fetch error:", err)
     }
     setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1)
-      fetchIngredients(query, 1, riskFilter)
+      setDebouncedQuery(query)
+      // Reset to page 1 when typing a new search
+      if (query !== debouncedQuery) setPage(1)
     }, 400)
-
     return () => clearTimeout(timer)
   }, [query])
 
   useEffect(() => {
-    fetchIngredients(query, page, riskFilter)
-  }, [page, riskFilter])
+    fetchIngredients(debouncedQuery, page, riskFilter)
+  }, [debouncedQuery, page, riskFilter])
 
   const handleSearch = (e) => {
     e.preventDefault()
+    setDebouncedQuery(query)
     setPage(1)
-    fetchIngredients(query, 1, riskFilter)
   }
 
   return (
@@ -179,6 +180,7 @@ const Encyclopedia = () => {
                 {[
                   { label: "Safe", val: "Safe" },
                   { label: "Caution", val: "Moderate" },
+                  { label: "Irritant", val: "Irritant" },
                   { label: "Avoid", val: "Avoid" },
                 ].map((f) => (
                   <span
@@ -188,12 +190,24 @@ const Encyclopedia = () => {
                     onClick={() => {
                       const newRisk = riskFilter === f.val ? "" : f.val
                       setRiskFilter(newRisk)
-                      setPage(1) // This will trigger the useEffect automatically
+                      setPage(1)
                     }}
                   >
                     {f.label}
                   </span>
                 ))}
+                {riskFilter && (
+                  <span
+                    className="badge rounded-pill bg-secondary text-white"
+                    style={{ cursor: "pointer", padding: "6px 14px" }}
+                    onClick={() => {
+                      setRiskFilter("")
+                      setPage(1)
+                    }}
+                  >
+                    Clear
+                  </span>
+                )}
               </div>
             </div>
 
@@ -223,7 +237,7 @@ const Encyclopedia = () => {
           </Col>
 
           {/* Cards Grid */}
-          <Col lg={9}>
+          <Col lg={9} style={{ minHeight: "800px" }}>
             {loading ? (
               <Row className="g-4">
                 {[1, 2, 3, 4, 5, 6].map((idx) => (
@@ -239,7 +253,6 @@ const Encyclopedia = () => {
                       </div>
                       <Skeleton width="80%" height={24} className="mb-2" />
                       <Skeleton width="60%" height={14} className="mb-3" />
-
                       <div className="d-flex align-items-center gap-2 mb-2">
                         <Skeleton width={100} height={12} />
                         <Skeleton
@@ -253,20 +266,19 @@ const Encyclopedia = () => {
                         height={8}
                         className="mb-3 rounded"
                       />
-
                       <Skeleton width="100%" height={12} className="mb-1" />
                       <Skeleton width="90%" height={12} className="mb-1" />
                       <Skeleton width="70%" height={12} className="mb-3" />
-
                       <Skeleton width="100%" height={32} className="rounded" />
                     </div>
                   </Col>
                 ))}
               </Row>
-            ) : (
+            ) : ingredients.length > 0 ? (
               <>
                 <Row className="g-4">
                   {ingredients.map((ing, idx) => (
+                    // ... Keep your existing ingredient mapping logic exactly the same ...
                     <Col md={4} key={ing.id}>
                       <div
                         className="pc-card p-4 h-100 fade-in-up"
@@ -306,7 +318,6 @@ const Encyclopedia = () => {
                         >
                           {ing.compatible_skin_types}
                         </small>
-
                         <div className="d-flex align-items-center gap-2 mb-2">
                           <small
                             className="text-uppercase fw-semibold"
@@ -327,7 +338,6 @@ const Encyclopedia = () => {
                         <div
                           className={`status-bar ${getBarClass(ing.safety_rating)}`}
                         ></div>
-
                         <p
                           className="mt-2 mb-3"
                           style={{
@@ -338,7 +348,6 @@ const Encyclopedia = () => {
                           {ing.description?.substring(0, 100)}
                           {ing.description?.length > 100 ? "..." : ""}
                         </p>
-
                         <button
                           className="btn btn-sm btn-pc-secondary w-100"
                           onClick={() => openClinicalDetails(ing)}
@@ -352,25 +361,21 @@ const Encyclopedia = () => {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
+                  // ... Keep your existing Pagination code exactly the same ...
                   <div className="d-flex justify-content-center mt-5">
                     <Pagination className="pc-pagination">
+                      {/* Your existing pagination logic */}
                       <Pagination.Prev
                         disabled={page === 1}
                         onClick={() => setPage((p) => p - 1)}
                       />
-
-                      {/* Always show page 1 */}
                       <Pagination.Item
                         active={page === 1}
                         onClick={() => setPage(1)}
                       >
                         1
                       </Pagination.Item>
-
-                      {/* Left ellipsis */}
                       {page > 3 && <Pagination.Ellipsis disabled />}
-
-                      {/* Middle pages — sliding window around current page */}
                       {Array.from({ length: totalPages }, (_, i) => i + 1)
                         .filter(
                           (p) =>
@@ -385,13 +390,9 @@ const Encyclopedia = () => {
                             {p}
                           </Pagination.Item>
                         ))}
-
-                      {/* Right ellipsis */}
                       {page < totalPages - 2 && (
                         <Pagination.Ellipsis disabled />
                       )}
-
-                      {/* Always show last page */}
                       {totalPages > 1 && (
                         <Pagination.Item
                           active={page === totalPages}
@@ -400,7 +401,6 @@ const Encyclopedia = () => {
                           {totalPages}
                         </Pagination.Item>
                       )}
-
                       <Pagination.Next
                         disabled={page === totalPages}
                         onClick={() => setPage((p) => p + 1)}
@@ -409,6 +409,34 @@ const Encyclopedia = () => {
                   </div>
                 )}
               </>
+            ) : (
+              // NEW: Empty State to prevent layout collapse when 0 results are found
+              <div
+                className="pc-card p-5 text-center d-flex flex-column align-items-center justify-content-center"
+                style={{ height: "400px" }}
+              >
+                <i
+                  className="bi bi-search mb-3"
+                  style={{ fontSize: "2.5rem", color: "var(--pc-muted)" }}
+                ></i>
+                <h4 style={{ fontFamily: "var(--pc-font-serif)" }}>
+                  No ingredients found
+                </h4>
+                <p style={{ color: "var(--pc-muted)" }}>
+                  We couldn't find any ingredients matching your current
+                  filters.
+                </p>
+                <button
+                  className="btn btn-outline-secondary mt-3"
+                  onClick={() => {
+                    setQuery("")
+                    setRiskFilter("")
+                    setPage(1)
+                  }}
+                >
+                  Clear Filters
+                </button>
+              </div>
             )}
           </Col>
         </Row>

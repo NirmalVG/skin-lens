@@ -5,11 +5,8 @@ load_dotenv()
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, desc
-from typing import List
 
 from database import get_db, Base, engine
-from models import Ingredient, SafetyRating, User
 from auth import create_access_token, get_current_user
 from ocr_service import extract_ingredients_from_image
 from models import Ingredient, SafetyRating, User, QuizResult
@@ -217,15 +214,12 @@ async def google_auth(request: Request, db: Session = Depends(get_db)):
             "https://www.googleapis.com/oauth2/v3/userinfo",
             headers={"Authorization": f"Bearer {token}"}
         )
-        info = response.json()
-        print(f"[GOOGLE] userinfo response: {info}")  # ← shows real error in terminal
+        info = response.json() # ← shows real error in terminal
     except Exception as e:
-        print(f"[GOOGLE] Request failed: {e}")
         raise HTTPException(status_code=400, detail="Could not reach Google")
 
     # Check for errors separately
     if response.status_code != 200:
-        print(f"[GOOGLE] Bad status: {response.status_code} — {info}")
         raise HTTPException(status_code=400, detail="Invalid Google token")
 
     email     = info.get("email")
@@ -256,7 +250,6 @@ async def google_auth(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
     except Exception as e:
-        print(f"[DB] Error saving user: {e}")
         raise HTTPException(status_code=500, detail="Database error")
 
     jwt_token = create_access_token({"sub": user.email})

@@ -212,22 +212,40 @@ const Analyze = () => {
                         "linear-gradient(transparent, rgba(26,38,30,0.9))",
                     }}
                   >
-                    <div className="d-flex justify-content-between mb-2">
-                      <small className="text-white fw-semibold">
-                        <i className="bi bi-stars me-1"></i> AI SCANNING ACTIVE
-                      </small>
-                      <small className="text-warning fw-bold">
-                        {Math.round(scanProgress)}% Parsed
-                      </small>
-                    </div>
-                    <div className="pc-progress">
+                    <div className="d-flex align-items-center gap-2 mt-2">
+                      {/* Outer Track */}
                       <div
-                        className="progress-bar"
                         style={{
-                          width: `${scanProgress}%`,
-                          transition: "width 0.4s",
+                          width: "100%", // You can change this to 200px if you want a fixed width like the quiz
+                          height: "8px",
+                          background: "var(--pc-border)",
+                          borderRadius: "99px",
+                          overflow: "hidden",
                         }}
-                      ></div>
+                      >
+                        {/* Inner Fill (The animated part) */}
+                        <div
+                          style={{
+                            height: "100%",
+                            borderRadius: "99px",
+                            width: `${scanProgress}%`,
+                            backgroundColor: "#79a6b1",
+                            boxShadow: "0 0 8px rgba(121, 166, 177, 0.5)",
+                            transition: "width 0.5s ease-in-out",
+                          }}
+                        ></div>
+                      </div>
+
+                      <small
+                        style={{
+                          color: "var(--pc-muted)",
+                          fontSize: "0.75rem",
+                          minWidth: "35px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {Math.round(scanProgress)}%
+                      </small>
                     </div>
                   </div>
                 )}
@@ -317,8 +335,7 @@ const Analyze = () => {
                               style={{ color: "var(--pc-safe)" }}
                             ></i>
                           )}
-                          {(ing.source === "gemini" ||
-                            ing.source === "easyocr") && (
+                          {ing.source === "gemini" && (
                             <span className="badge ms-2">✨ AI Analyzed</span>
                           )}
                         </div>

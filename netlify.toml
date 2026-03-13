@@ -2,3 +2,8 @@
   base = "frontend"
   command = "npm run build"
   publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
