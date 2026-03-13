@@ -338,9 +338,7 @@ const Quiz = () => {
     return (
       <div className="fade-in-up">
         <Container className="py-5">
-          {/* Header skeleton */}
           <div className="text-center mb-5">
-            {/* Use 100% width with a maxWidth to shrink on small screens */}
             <Skeleton
               width="100%"
               height={48}
@@ -355,7 +353,6 @@ const Quiz = () => {
             />
           </div>
 
-          {/* Skin type card skeleton */}
           <Row className="g-4 justify-content-center">
             <Col md={8}>
               <div className="pc-card p-5 text-center">
@@ -371,16 +368,13 @@ const Quiz = () => {
                   style={{ maxWidth: 200 }}
                   className="mx-auto mb-3"
                 />
-                {/* Use percentages for paragraph lines so they flex with the card size */}
                 <Skeleton width="80%" height={16} className="mx-auto mb-2" />
                 <Skeleton width="60%" height={14} className="mx-auto" />
               </div>
             </Col>
           </Row>
 
-          {/* Recommendations section skeleton */}
           <div className="mt-5">
-            {/* Wrapped the header skeleton in a text-center div for proper alignment on mobile */}
             <div className="text-center mb-4">
               <Skeleton
                 width="100%"
@@ -397,7 +391,6 @@ const Quiz = () => {
                       <Skeleton circle width={20} height={20} />
                       <Skeleton width="70%" height={18} />
                     </div>
-                    {/* The percentages here were already perfectly responsive! */}
                     <Skeleton width="90%" height={14} className="mb-1" />
                     <Skeleton width="80%" height={14} className="mb-1" />
                     <Skeleton width="60%" height={14} />
@@ -407,9 +400,7 @@ const Quiz = () => {
             </Row>
           </div>
 
-          {/* Button skeleton */}
           <div className="text-center mt-5">
-            {/* 150px is safe to keep hardcoded since mobile screens are much wider than 150px */}
             <Skeleton width={150} height={44} className="mx-auto rounded" />
           </div>
         </Container>

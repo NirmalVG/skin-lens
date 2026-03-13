@@ -90,10 +90,10 @@ const Home = () => {
               </p>
               <div className="d-flex gap-3 hero-buttons">
                 <Link to="/analyze" className="btn btn-pc-primary">
-                  Start Free Analysis
+                  Check Product Safety
                 </Link>
                 <Link to="/ingredients" className="btn btn-pc-secondary">
-                  View Sample Report
+                  Explore Ingredients
                 </Link>
               </div>
             </Col>
