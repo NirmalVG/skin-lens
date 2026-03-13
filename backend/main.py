@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 import os
 load_dotenv()
+from pydantic import BaseModel
+from sqlalchemy import or_
 
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +13,10 @@ from auth import create_access_token, get_current_user
 from ocr_service import extract_ingredients_from_image
 from models import Ingredient, SafetyRating, User, QuizResult
 import requests
+
+class QuizRequest(BaseModel):
+    skin_type: str
+    sensitivities: str = "none"
 
 # 1. INITIALIZE THE APP
 app = FastAPI(title="Skin Lens API")
@@ -158,21 +164,23 @@ async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_
 # ==========================================
 # ROUTE 3: QUIZ RECOMMENDATIONS
 # ==========================================
+# ==========================================
+# ROUTE 3: QUIZ RECOMMENDATIONS
+# ==========================================
 @app.post("/api/quiz/recommendations")
 def get_recommendations(
-    skin_type: str = Form(...),
-    sensitivities: str = Form(...),
+    data: QuizRequest, # <-- Now expects JSON!
     db: Session = Depends(get_db)
 ):
     qs = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.SAFE)
     qs = qs.filter(or_(
-        Ingredient.compatible_skin_types.ilike(f"%{skin_type}%"),
+        Ingredient.compatible_skin_types.ilike(f"%{data.skin_type}%"),
         Ingredient.compatible_skin_types.ilike("%All%")
     ))
     top_ingredients = qs.limit(5).all()
 
     return {
-        "skin_type": skin_type,
+        "skin_type": data.skin_type,
         "recommended_ingredients": [{
             "name": i.name,
             "description": i.description
@@ -354,9 +362,7 @@ def delete_ingredient(ingredient_id: int, db: Session = Depends(get_db)):
 # ==========================================
 @app.post("/api/quiz/save")
 def save_quiz_result(
-    request: Request,
-    skin_type:     str = Form(...),
-    sensitivities: str = Form(""),
+    data: QuizRequest, # <-- This tells FastAPI to read the incoming JSON!
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -364,18 +370,22 @@ def save_quiz_result(
     old = db.query(QuizResult).filter(
         QuizResult.user_id == current_user.id
     ).first()
+    
     if old:
         db.delete(old)
 
+    # Create the new result using the data from the JSON request
     result = QuizResult(
         user_id=current_user.id,
-        skin_type=skin_type,
-        sensitivities=sensitivities,
+        skin_type=data.skin_type,
+        sensitivities=data.sensitivities,
     )
+    
     db.add(result)
     db.commit()
     db.refresh(result)
-    return {"message": "Quiz result saved", "skin_type": skin_type}
+    
+    return {"message": "Quiz result saved", "skin_type": data.skin_type}
 
 
 # ==========================================

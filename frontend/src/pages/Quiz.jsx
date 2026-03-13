@@ -84,6 +84,7 @@ const Quiz = () => {
   const [previousResult, setPreviousResult] = useState(null)
   const [checkingResult, setCheckingResult] = useState(true)
   const [retaking, setRetaking] = useState(false)
+  const [loadingResults, setLoadingResults] = useState(false) // Add this!
 
   const q = quizData[currentQ]
 
@@ -134,50 +135,63 @@ const Quiz = () => {
       setAnswered(false)
     } else {
       // Finished!
-      setFinished(true)
+      setLoadingResults(true) // Start loading before switching screens
 
-      // Determine skin type from accumulated scores
       const bestType =
         Object.entries(skinScores).sort((a, b) => b[1] - a[1])[0]?.[0] ||
         "Normal"
 
       try {
-        const fd = new FormData()
-        fd.append("skin_type", bestType)
-        fd.append("sensitivities", "none")
+        // Change from FormData to JSON (FastAPI standard)
         const res = await fetch(`${API}/api/quiz/recommendations`, {
           method: "POST",
-          body: fd,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            skin_type: bestType,
+            sensitivities: "none",
+          }),
         })
+
+        if (!res.ok) {
+          throw new Error(`API responded with status: ${res.status}`)
+        }
+
         const data = await res.json()
         setRecommendations(data)
 
+        // Only save if logged in
         const token = localStorage.getItem("skinlens_token")
         if (token) {
-          const savefd = new FormData()
-          savefd.append("skin_type", bestType)
-          savefd.append("sensitivities", "none")
-
           await fetch(`${API}/api/quiz/save`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-            body: savefd,
-          })
-
-          // Update state so Retake shows on next visit
-          setPreviousResult({
-            has_result: true,
-            skin_type: bestType,
-            taken_on: new Date().toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              skin_type: bestType,
+              sensitivities: "none",
             }),
-            recommended_ingredients: data.recommended_ingredients,
           })
         }
       } catch (err) {
-        console.error(err)
+        console.error("Failed to fetch recommendations:", err)
+        // Set a fallback so the UI doesn't look broken if the backend fails
+        setRecommendations({
+          skin_type: bestType,
+          recommended_ingredients: [
+            {
+              name: "Error Loading Data",
+              description:
+                "Could not connect to the recommendation engine. Please try again later.",
+            },
+          ],
+        })
+      } finally {
+        setLoadingResults(false)
+        setFinished(true)
       }
     }
   }
@@ -185,6 +199,38 @@ const Quiz = () => {
   const getOptionClass = (idx) => {
     if (!answered) return selected === idx ? "selected" : ""
     return idx === selected ? "selected" : ""
+  }
+
+  if (loadingResults) {
+    return (
+      <div
+        className="fade-in-up"
+        style={{
+          minHeight: "80vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div className="text-center">
+          <div
+            className="spinner-border text-secondary mb-3"
+            role="status"
+            style={{ width: "3rem", height: "3rem", color: "var(--pc-gold)" }}
+          >
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <h4
+            style={{
+              fontFamily: "var(--pc-font-serif)",
+              color: "var(--pc-muted)",
+            }}
+          >
+            Analyzing your skin profile...
+          </h4>
+        </div>
+      </div>
+    )
   }
 
   if (finished) {
