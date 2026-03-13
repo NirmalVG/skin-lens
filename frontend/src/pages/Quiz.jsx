@@ -117,7 +117,7 @@ const Quiz = () => {
         const data = await res.json()
         if (data.has_result) setPreviousResult(data)
       } catch (err) {
-        console.log("No previous result")
+        console.error(err)
       } finally {
         setCheckingResult(false)
       }
