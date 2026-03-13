@@ -1,11 +1,16 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { VitePWA } from "vite-plugin-pwa";
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import { VitePWA } from "vite-plugin-pwa"
 
 export default defineConfig({
   server: {
     hmr: {
       overlay: false,
+    },
+    cors: true,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
   },
   plugins: [
@@ -78,4 +83,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+})

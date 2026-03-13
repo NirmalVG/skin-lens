@@ -1,71 +1,97 @@
-import React, { useState, useRef } from "react";
-import { Container, Row, Col, Spinner } from "react-bootstrap";
+import React, { useState, useRef } from "react"
+import { Container, Row, Col, Spinner, Modal } from "react-bootstrap"
+import Skeleton from "react-loading-skeleton"
+import "react-loading-skeleton/dist/skeleton.css"
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
 const getBadgeClass = (rating) => {
-  const r = (rating || "").toLowerCase();
-  if (r === "avoid") return "badge-avoid";
-  if (r === "irritant") return "badge-irritant";
-  if (r === "safe") return "badge-safe";
-  if (r === "moderate") return "badge-moderate";
-  return "badge-unknown";
-};
+  const r = (rating || "").toLowerCase()
+  if (r === "avoid") return "badge-avoid"
+  if (r === "irritant") return "badge-irritant"
+  if (r === "safe") return "badge-safe"
+  if (r === "moderate") return "badge-moderate"
+  return "badge-unknown"
+}
 
 const Analyze = () => {
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [scanProgress, setScanProgress] = useState(0);
-  const inputRef = useRef(null);
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [scanProgress, setScanProgress] = useState(0)
+  const [showClinicalModal, setShowClinicalModal] = useState(false)
+  const [selectedIngredient, setSelectedIngredient] = useState(null)
+  const inputRef = useRef(null)
+
+  const openClinicalDetails = (ingredient) => {
+    setSelectedIngredient(ingredient)
+    setShowClinicalModal(true)
+  }
+
+  const closeClinicalDetails = () => {
+    setShowClinicalModal(false)
+  }
+
+  const clinicalSummaryForRating = (rating) => {
+    const r = (rating || "").toLowerCase()
+    if (r === "safe")
+      return "Generally well-tolerated in leave‑on and rinse‑off formulas when used as directed."
+    if (r === "moderate")
+      return "Use with some caution, especially on very sensitive or barrier‑impaired skin."
+    if (r === "irritant")
+      return "More likely to cause stinging, dryness, or redness—especially with frequent use."
+    if (r === "avoid")
+      return "Best avoided when possible; higher likelihood of irritation or other concerns."
+    return "Clinical profile varies by concentration, formulation, and individual tolerance."
+  }
 
   const handleFile = (f) => {
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setResults(null);
-  };
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+    setResults(null)
+  }
 
   const onDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  };
+    e.preventDefault()
+    setDragging(false)
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0])
+  }
 
   const analyze = async () => {
-    if (!file) return;
-    setLoading(true);
-    setScanProgress(0);
+    if (!file) return
+    setLoading(true)
+    setScanProgress(0)
 
     // Simulate progress
     const interval = setInterval(() => {
       setScanProgress((p) => {
         if (p >= 85) {
-          clearInterval(interval);
-          return 85;
+          clearInterval(interval)
+          return 85
         }
-        return p + Math.random() * 15;
-      });
-    }, 300);
+        return p + Math.random() * 15
+      })
+    }, 300)
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
+      const fd = new FormData()
+      fd.append("file", file)
       const res = await fetch(`${API}/api/analyze/image`, {
         method: "POST",
         body: fd,
-      });
-      const data = await res.json();
-      setScanProgress(100);
-      setTimeout(() => setResults(data), 400);
+      })
+      const data = await res.json()
+      setScanProgress(100)
+      setTimeout(() => setResults(data), 400)
     } catch (err) {
-      console.error(err);
+      console.error(err)
     } finally {
-      clearInterval(interval);
-      setLoading(false);
+      clearInterval(interval)
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="fade-in-up">
@@ -92,8 +118,8 @@ const Analyze = () => {
           <div
             className={`upload-zone mb-5 ${dragging ? "dragging" : ""}`}
             onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
+              e.preventDefault()
+              setDragging(true)
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
@@ -210,9 +236,9 @@ const Analyze = () => {
                 <button
                   className="btn btn-sm btn-pc-secondary"
                   onClick={() => {
-                    setPreview(null);
-                    setFile(null);
-                    setResults(null);
+                    setPreview(null)
+                    setFile(null)
+                    setResults(null)
                   }}
                 >
                   <i className="bi bi-x-lg me-1"></i> Remove
@@ -227,14 +253,35 @@ const Analyze = () => {
 
             <Col md={7}>
               {loading && !results && (
-                <div className="text-center py-5">
-                  <Spinner
-                    animation="border"
-                    style={{ color: "var(--pc-gold)" }}
-                  />
-                  <p className="mt-3" style={{ color: "var(--pc-muted)" }}>
-                    Analyzing ingredients...
-                  </p>
+                <div className="fade-in-up">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h3 style={{ fontSize: "1.8rem" }}>
+                      <Skeleton width={240} height={30} />
+                    </h3>
+                    <small style={{ color: "var(--pc-muted)" }}>
+                      <Skeleton width={100} height={18} />
+                    </small>
+                  </div>
+
+                  {[...Array(5)].map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="ingredient-result d-flex align-items-start justify-content-between fade-in-up"
+                      style={{ animationDelay: `${idx * 0.05}s` }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <Skeleton width={140} height={20} />
+                          <Skeleton width={60} height={24} />
+                          <Skeleton circle width={18} height={18} />
+                          <Skeleton width={90} height={20} />
+                        </div>
+                        <Skeleton width="100%" height={14} className="mb-1" />
+                        <Skeleton width="70%" height={12} />
+                      </div>
+                      <Skeleton width={24} height={24} />
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -270,13 +317,9 @@ const Analyze = () => {
                               style={{ color: "var(--pc-safe)" }}
                             ></i>
                           )}
-                          {ing.source === "ai" && (
-                            <span
-                              className="badge rounded-pill bg-light text-dark border"
-                              style={{ fontSize: "0.65rem" }}
-                            >
-                              ✨ AI Analyzed
-                            </span>
+                          {(ing.source === "gemini" ||
+                            ing.source === "easyocr") && (
+                            <span className="badge ms-2">✨ AI Analyzed</span>
                           )}
                         </div>
                         <p
@@ -297,10 +340,18 @@ const Analyze = () => {
                           Compatible: {String(ing.compatible_skin_types)}
                         </small>
                       </div>
-                      <i
-                        className="bi bi-info-circle ms-3"
-                        style={{ color: "var(--pc-muted)", cursor: "pointer" }}
-                      ></i>
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 ms-3"
+                        style={{
+                          color: "var(--pc-muted)",
+                          cursor: "pointer",
+                          fontSize: "1.25rem",
+                        }}
+                        onClick={() => openClinicalDetails(ing)}
+                      >
+                        <i className="bi bi-info-circle"></i>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -322,8 +373,84 @@ const Analyze = () => {
           </Row>
         )}
       </Container>
-    </div>
-  );
-};
 
-export default Analyze;
+      <Modal
+        show={showClinicalModal}
+        onHide={closeClinicalDetails}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--pc-font-serif)",
+                fontSize: "1.25rem",
+                lineHeight: 1.2,
+              }}
+            >
+              {selectedIngredient?.name || "Clinical Details"}
+            </div>
+            {selectedIngredient && (
+              <div className="d-flex flex-wrap gap-2 mt-2">
+                <span
+                  className={`badge rounded-pill ${getBadgeClass(
+                    selectedIngredient.safety_rating,
+                  )}`}
+                >
+                  {selectedIngredient.safety_rating || "Unknown"}
+                </span>
+                <span className="badge rounded-pill bg-light text-dark border">
+                  {selectedIngredient.compatible_skin_types || "All skin types"}
+                </span>
+              </div>
+            )}
+          </div>
+        </Modal.Header>
+        <Modal.Body>
+          {!selectedIngredient ? (
+            <p className="mb-0" style={{ color: "var(--pc-muted)" }}>
+              No ingredient selected.
+            </p>
+          ) : (
+            <>
+              <p style={{ color: "var(--pc-muted)" }}>
+                {selectedIngredient.description ||
+                  "No description available for this ingredient yet."}
+              </p>
+
+              <hr style={{ borderColor: "var(--pc-border)" }} />
+
+              <h6
+                style={{
+                  fontFamily: "var(--pc-font-serif)",
+                  marginBottom: 10,
+                }}
+              >
+                Clinical interpretation
+              </h6>
+              <ul style={{ color: "var(--pc-muted)", fontSize: "0.92rem" }}>
+                <li>
+                  <strong>Risk level</strong>:{" "}
+                  {selectedIngredient.safety_rating || "Unknown"} —{" "}
+                  {clinicalSummaryForRating(selectedIngredient.safety_rating)}
+                </li>
+                <li>
+                  <strong>Compatible skin types</strong>:{" "}
+                  {selectedIngredient.compatible_skin_types || "All"}
+                </li>
+                <li>
+                  <strong>Routine guidance</strong>: Patch test new products and
+                  avoid stacking multiple potentially irritating actives in the
+                  same routine.
+                </li>
+              </ul>
+            </>
+          )}
+        </Modal.Body>
+      </Modal>
+    </div>
+  )
+}
+
+export default Analyze

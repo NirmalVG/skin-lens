@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Container, Row, Col } from "react-bootstrap";
-import "./Home.css";
+import React, { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import { Container, Row, Col } from "react-bootstrap"
+import "./Home.css"
 
 const Home = () => {
-  const [activeInsightIndex, setActiveInsightIndex] = useState(0);
+  const [activeInsightIndex, setActiveInsightIndex] = useState(0)
 
   const insightSlides = [
     {
@@ -34,17 +34,17 @@ const Home = () => {
         "We highlight potential allergenic components and suggest fragrance-free alternatives.",
       fillPercent: 80,
     },
-  ];
+  ]
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setActiveInsightIndex((prev) => (prev + 1) % insightSlides.length);
-    }, 7000);
+      setActiveInsightIndex((prev) => (prev + 1) % insightSlides.length)
+    }, 7000)
 
-    return () => clearInterval(intervalId);
-  }, [insightSlides.length]);
+    return () => clearInterval(intervalId)
+  }, [insightSlides.length])
 
-  const activeInsight = insightSlides[activeInsightIndex];
+  const activeInsight = insightSlides[activeInsightIndex]
 
   return (
     <div className="fade-in-up home-page">
@@ -402,7 +402,7 @@ const Home = () => {
         </Container>
       </section>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home
