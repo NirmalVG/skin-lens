@@ -49,12 +49,12 @@
 }
 
 :root {
-  --pc-safe: #2d6a4f;
-  --pc-safe-bg: #d8f3dc;
-  --pc-avoid: #ae2012;
-  --pc-avoid-bg: #f9dcc4;
-  --pc-irritant: #e67e22;
-  --pc-irritant-bg: #fef5e7;
+  --pc-safe: #2f8e52;
+  --pc-safe-bg: #eaf5ee;
+  --pc-avoid: #d94a38;
+  --pc-avoid-bg: #ffefed;
+  --pc-irritant: #d98a28;
+  --pc-irritant-bg: #fff5e6;
 }
 
 .badge-safe {

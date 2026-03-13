@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   BrowserRouter,
   Routes,
@@ -6,20 +6,34 @@ import {
   Link,
   NavLink,
   useLocation,
-} from "react-router-dom";
-import { Navbar, Nav, Container } from "react-bootstrap";
-import Home from "./pages/Home";
-import Analyze from "./pages/Analyze";
-import Encyclopedia from "./pages/Encyclopedia";
-import Quiz from "./pages/Quiz";
+  Outlet,
+  Navigate,
+} from "react-router-dom"
+import { Navbar, Nav, Container } from "react-bootstrap"
+import { useAuth } from "./AuthContext"
+import Home from "./pages/Home"
+import Analyze from "./pages/Analyze"
+import Encyclopedia from "./pages/Encyclopedia"
+import Quiz from "./pages/Quiz"
+import Login from "./pages/Login"
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth()
+
+  if (loading) {
+    return <div>Loading...</div> // Or a proper loading component
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />
+}
 
 const AppNavbar = () => {
-  const [expanded, setExpanded] = useState(false);
-  const location = useLocation();
+  const [expanded, setExpanded] = useState(false)
+  const location = useLocation()
+  const { logout, isAuthenticated, user } = useAuth()
 
   useEffect(() => {
-    setExpanded(false);
-  }, [location.pathname]);
+    setExpanded(false)
+  }, [location.pathname])
 
   return (
     <Navbar
@@ -30,7 +44,7 @@ const AppNavbar = () => {
       fixed="top"
       style={{
         backdropFilter: "blur(12px)",
-        backgroundColor: "rgba(249,248,246,0.85)",
+        backgroundColor: "rgba(255,255,255,0.85)",
       }}
     >
       <Container>
@@ -50,14 +64,46 @@ const AppNavbar = () => {
               Quiz
             </Nav.Link>
           </Nav>
-          <Link to="/analyze" className="btn btn-pc-primary btn-sm">
-            Get Started
-          </Link>
+          {isAuthenticated ? (
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center gap-2">
+                {user?.picture && (
+                  <img
+                    src={user.picture}
+                    alt={user?.name || "User"}
+                    className="rounded-circle"
+                    referrerPolicy="no-referrer" // ← add this line
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "cover",
+                    }}
+                  />
+                )}
+                <span className="text-dark fw-medium">
+                  {user?.name || user?.email || "User"}
+                </span>
+              </div>
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => {
+                  logout()
+                  setExpanded(false)
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link to="/analyze" className="btn btn-pc-primary btn-sm">
+              Get Started
+            </Link>
+          )}
         </Navbar.Collapse>
       </Container>
     </Navbar>
-  );
-};
+  )
+}
 
 const Footer = () => {
   return (
@@ -88,7 +134,7 @@ const Footer = () => {
         </div>
         <hr style={{ borderColor: "var(--pc-border)" }} />
         <div className="d-flex justify-content-between align-items-center">
-          <small>© 2026 PureCheck AI. All rights reserved.</small>
+          <small>© 2026 Skin Lens. All rights reserved.</small>
           <div className="d-flex gap-3">
             <i className="bi bi-globe2"></i>
             <i className="bi bi-envelope"></i>
@@ -96,24 +142,42 @@ const Footer = () => {
         </div>
       </Container>
     </footer>
-  );
-};
+  )
+}
+
+/** Layout wrapper that includes navbar + footer for main pages */
+const MainLayout = () => (
+  <>
+    <AppNavbar />
+    <main style={{ paddingTop: "80px", minHeight: "100vh" }}>
+      <Outlet />
+    </main>
+    <Footer />
+  </>
+)
 
 function App() {
   return (
     <BrowserRouter>
-      <AppNavbar />
-      <main style={{ paddingTop: "80px", minHeight: "100vh" }}>
-        <Routes>
+      <Routes>
+        {/* Standalone full-page routes (no navbar/footer) */}
+        <Route path="/login" element={<Login />} />
+        {/* Main app routes with shared layout - protected */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<Home />} />
           <Route path="/analyze" element={<Analyze />} />
           <Route path="/ingredients" element={<Encyclopedia />} />
           <Route path="/quiz" element={<Quiz />} />
-        </Routes>
-      </main>
-      <Footer />
+        </Route>
+      </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

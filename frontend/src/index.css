@@ -1,17 +1,18 @@
-/* PureCheck AI - Custom Overrides on top of Bootstrap */
+/* Skin Lens - Custom Overrides on top of Bootstrap */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap");
 
 :root {
-  --pc-dark: #121e15;
-  --pc-green: #1a261e;
-  --pc-gold: #d6a95b;
-  --pc-gold-light: #f5eedc;
-  --pc-cream: #f9f8f6;
+  --pc-dark: #1a201c;
+  --pc-green: #1a201c;
+  --pc-accent: #79a6b1;
+  --pc-gold: #79a6b1;
+  --pc-gold-light: #eef7f9;
+  --pc-cream: #ffffff;
   --pc-white: #ffffff;
-  --pc-text: #131412;
-  --pc-muted: #646b66;
-  --pc-border: #e6e4e0;
+  --pc-text: #1a201c;
+  --pc-muted: #6c757d;
+  --pc-border: #e2e8f0;
   --pc-avoid-bg: #ffefed;
   --pc-avoid: #d94a38;
   --pc-irritant-bg: #fff5e6;

@@ -10,11 +10,10 @@ from typing import List
 
 from database import get_db, Base, engine
 from models import Ingredient, SafetyRating, User
-from schemas import UserCreate, UserLogin, Token
-from auth import hash_password, verify_password, create_access_token, get_current_user
+from auth import create_access_token, get_current_user
 from ocr_service import extract_ingredients_from_image
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
+from models import Ingredient, SafetyRating, User, QuizResult
+import requests
 
 # 1. INITIALIZE THE APP
 app = FastAPI(title="Skin Lens API")
@@ -33,6 +32,9 @@ def on_startup():
 # 2. CORS
 origins = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
     "https://skin-lens.netlify.app"
 ]
 
@@ -45,15 +47,22 @@ app.add_middleware(
     expose_headers=["Authorization"],
 )
 
+# Add COOP header for Google OAuth popup communication
+@app.middleware("http")
+async def add_coop_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    return response
+
 
 # Helper: build a consistent user dict for responses
 def _user_dict(user: User) -> dict:
     return {
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "picture": user.profile_picture,
-        "skin_type": user.skin_type,
+        "id":        user.id,
+        "name":      user.name      or "",
+        "email":     user.email     or "",
+        "picture":   user.profile_picture or "",
+        "skin_type": user.skin_type or "Normal",  # ← add fallback
     }
 
 
@@ -181,91 +190,6 @@ def health():
     return {"status": "ok"}
 
 
-# ==========================================
-# ROUTE 5: AUTHENTICATION — REGISTER (Form Data)
-# ==========================================
-@app.post("/api/auth/register")
-def register(
-    name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    skin_type: str = Form("Normal"),
-    db: Session = Depends(get_db)
-):
-    """
-    Register a new user via form data.
-    Used by the Register page which sends FormData.
-    """
-    existing = db.query(User).filter(User.email == email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    new_user = User(
-        name=name,
-        email=email,
-        hashed_password=hash_password(password),
-        skin_type=skin_type,
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    token = create_access_token({"sub": new_user.email})
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": _user_dict(new_user)
-    }
-
-
-# ==========================================
-# ROUTE 6: AUTHENTICATION — SIGNUP (JSON Body)
-# ==========================================
-@app.post("/api/auth/signup", response_model=Token)
-def signup(user_data: UserCreate, db: Session = Depends(get_db)):
-    """
-    Register a new user via JSON body.
-    Kept for backwards compatibility with tests.
-    """
-    existing = db.query(User).filter(User.email == user_data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    new_user = User(
-        name=user_data.name,
-        email=user_data.email,
-        hashed_password=hash_password(user_data.password),
-        skin_type=user_data.skin_type,
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    token = create_access_token({"sub": new_user.email})
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": _user_dict(new_user)
-    }
-
-
-# ==========================================
-# ROUTE 7: AUTHENTICATION — LOGIN (JSON Body)
-# ==========================================
-@app.post("/api/auth/login", response_model=Token)
-def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate with email + password. Returns JWT + user info."""
-    user = db.query(User).filter(User.email == user_data.email).first()
-    if not user or not user.hashed_password or not verify_password(user_data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    token = create_access_token({"sub": user.email})
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": _user_dict(user)
-    }
-
 
 # ==========================================
 # ROUTE 8: PROTECTED — GET CURRENT USER
@@ -281,47 +205,65 @@ def get_me(current_user: User = Depends(get_current_user)):
 # ==========================================
 @app.post("/api/auth/google")
 async def google_auth(request: Request, db: Session = Depends(get_db)):
-    body = await request.json()
+    body  = await request.json()
     token = body.get("token")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token missing")
+
+    # Call Google userinfo endpoint
     try:
-        info = id_token.verify_oauth2_token(
-            token, google_requests.Request(), GOOGLE_CLIENT_ID
+        response = requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {token}"}
         )
-    except Exception:
+        info = response.json()
+        print(f"[GOOGLE] userinfo response: {info}")  # ← shows real error in terminal
+    except Exception as e:
+        print(f"[GOOGLE] Request failed: {e}")
+        raise HTTPException(status_code=400, detail="Could not reach Google")
+
+    # Check for errors separately
+    if response.status_code != 200:
+        print(f"[GOOGLE] Bad status: {response.status_code} — {info}")
         raise HTTPException(status_code=400, detail="Invalid Google token")
 
-    email = info.get("email")
-    name = info.get("name")
-    picture = info.get("picture")
+    email     = info.get("email")
+    name      = info.get("name")
+    picture   = info.get("picture")
     google_id = info.get("sub")
 
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        user = User(
-            name=name,
-            email=email,
-            google_id=google_id,
-            profile_picture=picture
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    else:
-        # Update profile picture and google_id if missing
-        if not user.google_id:
-            user.google_id = google_id
-        if not user.profile_picture:
-            user.profile_picture = picture
-        if not user.name and name:
-            user.name = name
-        db.commit()
-        db.refresh(user)
+    if not email:
+        raise HTTPException(status_code=400, detail="Could not get email from Google")
+
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(
+                name=name,
+                email=email,
+                google_id=google_id,
+                profile_picture=picture
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            if not user.google_id:
+                user.google_id = google_id
+            if not user.profile_picture:
+                user.profile_picture = picture
+            db.commit()
+            db.refresh(user)
+    except Exception as e:
+        print(f"[DB] Error saving user: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
 
     jwt_token = create_access_token({"sub": user.email})
     return {
         "access_token": jwt_token,
-        "token_type": "bearer",
-        "user": _user_dict(user)
+        "token_type":   "bearer",
+        "user":         _user_dict(user)
     }
 
 
@@ -413,3 +355,65 @@ def delete_ingredient(ingredient_id: int, db: Session = Depends(get_db)):
     db.delete(ing)
     db.commit()
     return {"message": "Ingredient deleted"}
+
+# ==========================================
+# SAVE QUIZ RESULT
+# ==========================================
+@app.post("/api/quiz/save")
+def save_quiz_result(
+    request: Request,
+    skin_type:     str = Form(...),
+    sensitivities: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Delete old result for this user if exists
+    old = db.query(QuizResult).filter(
+        QuizResult.user_id == current_user.id
+    ).first()
+    if old:
+        db.delete(old)
+
+    result = QuizResult(
+        user_id=current_user.id,
+        skin_type=skin_type,
+        sensitivities=sensitivities,
+    )
+    db.add(result)
+    db.commit()
+    db.refresh(result)
+    return {"message": "Quiz result saved", "skin_type": skin_type}
+
+
+# ==========================================
+# GET PREVIOUS QUIZ RESULT
+# ==========================================
+@app.get("/api/quiz/my-result")
+def get_my_quiz_result(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = db.query(QuizResult).filter(
+        QuizResult.user_id == current_user.id
+    ).first()
+
+    if not result:
+        return {"has_result": False}
+
+    # Get recommendations for saved skin type
+    qs = db.query(Ingredient).filter(
+        Ingredient.safety_rating == SafetyRating.SAFE
+    ).filter(or_(
+        Ingredient.compatible_skin_types.ilike(f"%{result.skin_type}%"),
+        Ingredient.compatible_skin_types.ilike("%All%")
+    )).limit(5).all()
+
+    return {
+        "has_result":   True,
+        "skin_type":    result.skin_type,
+        "taken_on":     result.created_at.strftime("%B %d, %Y"),
+        "recommended_ingredients": [
+            {"name": i.name, "description": i.description}
+            for i in qs
+        ]
+    }

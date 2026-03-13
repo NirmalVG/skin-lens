@@ -1,101 +1,103 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Pagination, Modal } from "react-bootstrap";
+import React, { useState, useEffect } from "react"
+import { Container, Row, Col, Pagination, Modal } from "react-bootstrap"
+import Skeleton from "react-loading-skeleton"
+import "react-loading-skeleton/dist/skeleton.css"
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
 const getBadgeClass = (rating) => {
-  const r = (rating || "").toLowerCase();
-  if (r === "avoid") return "badge-avoid";
-  if (r === "irritant") return "badge-irritant";
-  if (r === "safe") return "badge-safe";
-  if (r === "moderate") return "badge-moderate";
-  return "badge-unknown";
-};
+  const r = (rating || "").toLowerCase()
+  if (r === "avoid") return "badge-avoid"
+  if (r === "irritant") return "badge-irritant"
+  if (r === "safe") return "badge-safe"
+  if (r === "moderate") return "badge-moderate"
+  return "badge-unknown"
+}
 
 const getBarClass = (rating) => {
-  const r = (rating || "").toLowerCase();
-  if (r === "avoid") return "status-bar-avoid";
-  if (r === "irritant") return "status-bar-irritant";
-  if (r === "safe") return "status-bar-safe";
-  if (r === "moderate") return "status-bar-moderate";
-  return "";
-};
+  const r = (rating || "").toLowerCase()
+  if (r === "avoid") return "status-bar-avoid"
+  if (r === "irritant") return "status-bar-irritant"
+  if (r === "safe") return "status-bar-safe"
+  if (r === "moderate") return "status-bar-moderate"
+  return ""
+}
 
 const Encyclopedia = () => {
-  const [query, setQuery] = useState("");
-  const [ingredients, setIngredients] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [showClinicalModal, setShowClinicalModal] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState(null);
+  const [query, setQuery] = useState("")
+  const [ingredients, setIngredients] = useState([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [showClinicalModal, setShowClinicalModal] = useState(false)
+  const [selectedIngredient, setSelectedIngredient] = useState(null)
 
   // Filters
-  const [riskFilter, setRiskFilter] = useState("");
+  const [riskFilter, setRiskFilter] = useState("")
 
   const openClinicalDetails = (ingredient) => {
-    setSelectedIngredient(ingredient);
-    setShowClinicalModal(true);
-  };
+    setSelectedIngredient(ingredient)
+    setShowClinicalModal(true)
+  }
 
   const closeClinicalDetails = () => {
-    setShowClinicalModal(false);
-    setSelectedIngredient(null);
-  };
+    setShowClinicalModal(false)
+    setSelectedIngredient(null)
+  }
 
   const clinicalSummaryForRating = (rating) => {
-    const r = (rating || "").toLowerCase();
+    const r = (rating || "").toLowerCase()
     if (r === "safe")
-      return "Generally well-tolerated in leave‑on and rinse‑off formulas when used as directed.";
+      return "Generally well-tolerated in leave‑on and rinse‑off formulas when used as directed."
     if (r === "moderate")
-      return "Use with some caution, especially on very sensitive or barrier‑impaired skin.";
+      return "Use with some caution, especially on very sensitive or barrier‑impaired skin."
     if (r === "irritant")
-      return "More likely to cause stinging, dryness, or redness—especially with frequent use.";
+      return "More likely to cause stinging, dryness, or redness—especially with frequent use."
     if (r === "avoid")
-      return "Best avoided when possible; higher likelihood of irritation or other concerns.";
-    return "Clinical profile varies by concentration, formulation, and individual tolerance.";
-  };
+      return "Best avoided when possible; higher likelihood of irritation or other concerns."
+    return "Clinical profile varies by concentration, formulation, and individual tolerance."
+  }
 
   const fetchIngredients = async (searchQuery, pg, riskLevel) => {
-    setLoading(true);
+    setLoading(true)
     try {
       // We trim the riskLevel to ensure no extra spaces are sent
-      const cleanRisk = riskLevel.trim();
-      const url = `${API}/api/ingredients/search?query=${encodeURIComponent(searchQuery)}&page=${pg}&risk=${cleanRisk}`;
+      const cleanRisk = riskLevel.trim()
+      const url = `${API}/api/ingredients/search?query=${encodeURIComponent(searchQuery)}&page=${pg}&risk=${cleanRisk}`
 
-      console.log("SENDING REQUEST TO:", url); // Open F12 console to see this!
+      console.log("SENDING REQUEST TO:", url) // Open F12 console to see this!
 
-      const res = await fetch(url);
-      const data = await res.json();
+      const res = await fetch(url)
+      const data = await res.json()
 
-      setIngredients(data.items || []);
-      setTotalPages(data.pages || 1);
-      setTotal(data.total || 0);
+      setIngredients(data.items || [])
+      setTotalPages(data.pages || 1)
+      setTotal(data.total || 0)
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("Fetch error:", err)
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1);
-      fetchIngredients(query, 1, riskFilter);
-    }, 400);
+      setPage(1)
+      fetchIngredients(query, 1, riskFilter)
+    }, 400)
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => clearTimeout(timer)
+  }, [query])
 
   useEffect(() => {
-    fetchIngredients(query, page, riskFilter);
-  }, [page, riskFilter]);
+    fetchIngredients(query, page, riskFilter)
+  }, [page, riskFilter])
 
   const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
-    fetchIngredients(query, 1, riskFilter);
-  };
+    e.preventDefault()
+    setPage(1)
+    fetchIngredients(query, 1, riskFilter)
+  }
 
   return (
     <div className="fade-in-up">
@@ -184,9 +186,9 @@ const Encyclopedia = () => {
                     className={`badge rounded-pill ${riskFilter === f.val ? "bg-dark text-white" : "bg-light text-dark border"}`}
                     style={{ cursor: "pointer", padding: "6px 14px" }}
                     onClick={() => {
-                      const newRisk = riskFilter === f.val ? "" : f.val;
-                      setRiskFilter(newRisk);
-                      setPage(1); // This will trigger the useEffect automatically
+                      const newRisk = riskFilter === f.val ? "" : f.val
+                      setRiskFilter(newRisk)
+                      setPage(1) // This will trigger the useEffect automatically
                     }}
                   >
                     {f.label}
@@ -223,12 +225,44 @@ const Encyclopedia = () => {
           {/* Cards Grid */}
           <Col lg={9}>
             {loading ? (
-              <div className="text-center py-5">
-                <div
-                  className="spinner-border"
-                  style={{ color: "var(--pc-gold)" }}
-                ></div>
-              </div>
+              <Row className="g-4">
+                {[1, 2, 3, 4, 5, 6].map((idx) => (
+                  <Col md={4} key={idx}>
+                    <div className="pc-card p-4 h-100">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <Skeleton
+                          width={60}
+                          height={20}
+                          className="rounded-pill"
+                        />
+                        <Skeleton circle width={16} height={16} />
+                      </div>
+                      <Skeleton width="80%" height={24} className="mb-2" />
+                      <Skeleton width="60%" height={14} className="mb-3" />
+
+                      <div className="d-flex align-items-center gap-2 mb-2">
+                        <Skeleton width={100} height={12} />
+                        <Skeleton
+                          width={60}
+                          height={20}
+                          className="rounded-pill"
+                        />
+                      </div>
+                      <Skeleton
+                        width="100%"
+                        height={8}
+                        className="mb-3 rounded"
+                      />
+
+                      <Skeleton width="100%" height={12} className="mb-1" />
+                      <Skeleton width="90%" height={12} className="mb-1" />
+                      <Skeleton width="70%" height={12} className="mb-3" />
+
+                      <Skeleton width="100%" height={32} className="rounded" />
+                    </div>
+                  </Col>
+                ))}
+              </Row>
             ) : (
               <>
                 <Row className="g-4">
@@ -454,7 +488,7 @@ const Encyclopedia = () => {
         </Modal.Body>
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default Encyclopedia;
+export default Encyclopedia
