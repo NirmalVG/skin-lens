@@ -314,10 +314,14 @@
   }
 
   .login-brand {
-    display: block;
-    flex: none;
-    min-height: 300px;
+    display: flex;
+    flex: 3;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
     padding: 32px 24px;
+    min-height: 0; /* Remove min-height to allow flex to work */
   }
 
   .login-brand-logo {
@@ -360,8 +364,8 @@
 
 @media (max-width: 768px) {
   .login-brand {
-    min-height: 250px;
     padding: 24px 20px;
+    min-height: 0; /* Allow flex to control height */
   }
 
   .login-brand-image {
@@ -440,13 +444,13 @@
   }
 
   .login-brand-heading {
-    font-size: 1rem;
-    margin-top: 12px;
+    font-size: 1.8rem;
+    margin-top: 40px;
     margin-bottom: 6px;
   }
 
   .login-brand-subtitle {
-    font-size: 0.8rem;
+    font-size: 1rem;
     line-height: 1.4;
   }
 
