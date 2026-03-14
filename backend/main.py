@@ -141,7 +141,7 @@ async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_
                 "safety_rating": ing["safety_rating"],
                 "description": ing["description"],
                 "compatible_skin_types": ing["compatible_skin_types"],
-                "source": "ai"
+                "source": ing.get("source", "ai")  
             })
 
     avoid_count = sum(1 for r in results if r["safety_rating"] == "Avoid")
@@ -278,7 +278,12 @@ def admin_stats(db: Session = Depends(get_db)):
     moderate = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.MODERATE).count()
     irritant = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.IRRITANT).count()
     avoid = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.AVOID).count()
-    return {"total": total, "safe": safe, "moderate": moderate, "irritant": irritant, "avoid": avoid}
+    users = db.query(User).count()  # ← add this
+    return {
+        "total": total, "safe": safe, "moderate": moderate,
+        "irritant": irritant, "avoid": avoid,
+        "total_users": users  # ← add this
+    }
 
 
 # ==========================================
@@ -420,3 +425,8 @@ def get_my_quiz_result(
             for i in qs
         ]
     }
+
+@app.get("/api/admin/users")
+def get_all_users(db: Session = Depends(get_db)):
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return [_user_dict(u) for u in users]   
