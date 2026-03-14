@@ -16,11 +16,33 @@ import Analyze from "./pages/Analyze"
 import Encyclopedia from "./pages/Encyclopedia"
 import Quiz from "./pages/Quiz"
 import Login from "./pages/Login"
+
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
-    return <div>Loading...</div> // Or a proper loading component
+    return (
+      <div style={{ paddingTop: "80px" }}>
+        <Container className="py-5">
+          <Row className="align-items-center g-5">
+            <Col lg={6}>
+              <Skeleton width={120} height={32} className="mb-3" />
+              <Skeleton width="80%" height={60} className="mb-2" />
+              <Skeleton width="60%" height={60} className="mb-4" />
+              <Skeleton width="90%" height={20} className="mb-2" />
+              <Skeleton width="75%" height={20} className="mb-4" />
+              <div className="d-flex gap-3">
+                <Skeleton width={160} height={48} borderRadius={40} />
+                <Skeleton width={160} height={48} borderRadius={40} />
+              </div>
+            </Col>
+            <Col lg={6} className="text-center">
+              <Skeleton width="100%" height={400} borderRadius={24} />
+            </Col>
+          </Row>
+        </Container>
+      </div>
+    )
   }
 
   return isAuthenticated ? children : <Navigate to="/login" replace />
