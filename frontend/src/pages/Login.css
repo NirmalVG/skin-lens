@@ -321,7 +321,7 @@
     justify-content: center;
     position: relative;
     padding: 32px 24px;
-    min-height: 0; /* Remove min-height to allow flex to work */
+    min-height: 0;
   }
 
   .login-brand-logo {

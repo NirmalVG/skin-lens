@@ -193,7 +193,6 @@ const Analyze = () => {
           </Row>
         )}
 
-        {/* Preview + Results */}
         {preview && (
           <Row className="g-5">
             <Col md={5}>
@@ -212,18 +211,20 @@ const Analyze = () => {
                         "linear-gradient(transparent, rgba(26,38,30,0.9))",
                     }}
                   >
-                    <div className="d-flex align-items-center gap-2 mt-2 w-100">
-                      {/* Outer Track */}
+                    <small className="text-white fw-semibold d-block mb-2">
+                      <i className="bi bi-stars me-1"></i> AI SCANNING ACTIVE
+                    </small>
+
+                    <div className="d-flex align-items-center gap-2 w-100">
                       <div
                         style={{
-                          flex: 1, // <-- CHANGED: This makes it responsive in a flex container
+                          flex: 1,
                           height: "8px",
                           background: "var(--pc-border)",
                           borderRadius: "99px",
                           overflow: "hidden",
                         }}
                       >
-                        {/* Inner Fill (The animated part) */}
                         <div
                           style={{
                             height: "100%",
@@ -235,15 +236,13 @@ const Analyze = () => {
                           }}
                         ></div>
                       </div>
-
-                      {/* Percentage Text */}
                       <small
                         style={{
-                          color: "var(--pc-muted)",
+                          color: "#fff",
                           fontSize: "0.75rem",
                           minWidth: "35px",
                           textAlign: "right",
-                          flexShrink: 0, // <-- CHANGED: Prevents the text from getting squished on tiny screens
+                          flexShrink: 0,
                         }}
                       >
                         {Math.round(scanProgress)}%
