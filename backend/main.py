@@ -65,7 +65,6 @@ def _user_dict(user: User) -> dict:
         "name":      user.name      or "",
         "email":     user.email     or "",
         "picture":   user.profile_picture or "",
-        "skin_type": user.skin_type or "Normal",  # ← add fallback
     }
 
 

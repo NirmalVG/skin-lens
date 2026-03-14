@@ -349,8 +349,8 @@ const Analyze = () => {
                       className="ingredient-result d-flex align-items-start justify-content-between fade-in-up"
                       style={{ animationDelay: `${idx * 0.05}s` }}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div className="d-flex align-items-center gap-2 mb-1">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="d-flex align-items-center  flex-wrap gap-2 mb-1">
                           <strong style={{ fontSize: "1.05rem" }}>
                             {String(ing.name)}
                           </strong>
@@ -384,6 +384,7 @@ const Analyze = () => {
                           style={{
                             color: "var(--pc-muted)",
                             fontSize: "0.88rem",
+                            wordBreak: "break-word",
                           }}
                         >
                           {String(ing.description)}
@@ -399,7 +400,7 @@ const Analyze = () => {
                       </div>
                       <button
                         type="button"
-                        className="btn btn-link p-0 ms-3"
+                        className="btn btn-link p-0 ms-3 flex-shrink-0"
                         style={{
                           color: "var(--pc-muted)",
                           cursor: "pointer",
