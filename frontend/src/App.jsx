@@ -9,13 +9,14 @@ import {
   Outlet,
   Navigate,
 } from "react-router-dom"
-import { Navbar, Nav, Container } from "react-bootstrap"
+import { Navbar, Nav, Container, Row, Col } from "react-bootstrap"
 import { useAuth } from "./AuthContext"
 import Home from "./pages/Home"
 import Analyze from "./pages/Analyze"
 import Encyclopedia from "./pages/Encyclopedia"
 import Quiz from "./pages/Quiz"
 import Login from "./pages/Login"
+import Skeleton from "react-loading-skeleton"
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
