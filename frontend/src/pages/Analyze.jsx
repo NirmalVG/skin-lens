@@ -366,7 +366,17 @@ const Analyze = () => {
                             ></i>
                           )}
                           {ing.source === "gemini" && (
-                            <span className="badge ms-2">✨ AI Analyzed</span>
+                            <span
+                              className="badge ms-2"
+                              style={{
+                                background: "var(--pc-gold-light)",
+                                color: "var(--pc-accent)",
+                                border: "1px solid var(--pc-accent)",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              ✨ AI Analyzed
+                            </span>
                           )}
                         </div>
                         <p
