@@ -108,7 +108,9 @@ const Quiz = () => {
 
   useEffect(() => {
     const checkPreviousResult = async () => {
-      const token = localStorage.getItem("skinlens_token")
+      const token =
+        localStorage.getItem("skinlens_token") ||
+        sessionStorage.getItem("skinlens_token")
       if (!token) {
         setCheckingResult(false)
         return

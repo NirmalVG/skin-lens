@@ -202,25 +202,22 @@ async def analyze_label(file: UploadFile = File(...), db: Session = Depends(get_
 
 
 @app.post("/api/quiz/recommendations")
-def get_recommendations(
-    data: QuizRequest, # Expects the JSON structure we defined at the top
+async def get_recommendations(
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    """Calculates product recommendations based on a quick quiz, no login required."""
-    # Start by grabbing ALL ingredients marked as completely "Safe"
+    body = await request.json()
+    skin_type = body.get("skin_type", "Normal")
+
     qs = db.query(Ingredient).filter(Ingredient.safety_rating == SafetyRating.SAFE)
-    
-    # Filter that safe list down to only ingredients that match the user's skin type OR are marked for "All"
     qs = qs.filter(or_(
-        Ingredient.compatible_skin_types.ilike(f"%{data.skin_type}%"),
+        Ingredient.compatible_skin_types.ilike(f"%{skin_type}%"),
         Ingredient.compatible_skin_types.ilike("%All%")
     ))
-    
-    # Grab the top 5 results
     top_ingredients = qs.limit(5).all()
 
     return {
-        "skin_type": data.skin_type,
+        "skin_type": skin_type,
         "recommended_ingredients": [{
             "name": i.name,
             "description": i.description
@@ -415,34 +412,30 @@ def delete_ingredient(ingredient_id: int, db: Session = Depends(get_db)):
 # ==========================================
 
 @app.post("/api/quiz/save")
-def save_quiz_result(
-    data: QuizRequest, # Uses JSON
+async def save_quiz_result(
+    request: Request,
     db: Session = Depends(get_db),
-    # Depends(get_current_user) forces the user to be logged in to save a result
-    current_user: User = Depends(get_current_user) 
+    current_user: User = Depends(get_current_user)
 ):
-    """Saves a user's quiz result to their profile so they can see it later."""
-    # Check if they took the quiz before
+    body = await request.json()
+    skin_type = body.get("skin_type", "Normal")
+    sensitivities = body.get("sensitivities", "")
+
     old = db.query(QuizResult).filter(
         QuizResult.user_id == current_user.id
     ).first()
-    
-    # We only let users have one active profile, so delete the old one
     if old:
         db.delete(old)
 
-    # Save the new profile
     result = QuizResult(
         user_id=current_user.id,
-        skin_type=data.skin_type,
-        sensitivities=data.sensitivities,
+        skin_type=skin_type,
+        sensitivities=sensitivities,
     )
-    
     db.add(result)
     db.commit()
     db.refresh(result)
-    
-    return {"message": "Quiz result saved", "skin_type": data.skin_type}
+    return {"message": "Quiz result saved", "skin_type": skin_type}
 
 
 @app.get("/api/quiz/my-result")
