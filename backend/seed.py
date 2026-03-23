@@ -1,47 +1,50 @@
+# Import tools needed to talk to the database and manage connections
 from sqlalchemy.pool import NullPool
 from sqlalchemy import create_engine
 import os
 import re
 import time
-from dotenv import load_dotenv
 
-# 1. LOAD ENVIRONMENT VARIABLES
+# Load environment variables (like your DATABASE_URL) from the local .env file
+from dotenv import load_dotenv
 load_dotenv()
 
+# Import Session for managing database transactions, and OperationalError to catch database crashes
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 
-# Import your local files
+# Import your custom database setups, your data models, and the massive list of ingredients to insert
 from database import Base, SessionLocal
 import models
 from ingredients_data import INGREDIENTS
 
 # ==========================================
-# 2. CLOUD DATABASE URL FIXES
+# 1. DATABASE CONNECTION SETUP
 # ==========================================
+# We recreate the exact engine setup from database.py here so the seed script can run entirely on its own.
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# Fix the driver: SQLAlchemy needs 'pymysql' to talk to MySQL.
+# Fix the URL format for SQLAlchemy to use the pymysql driver
 if SQLALCHEMY_DATABASE_URL.startswith("mysql://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
 
-# Clean the URL: Remove conflicting SSL arguments from the URL string.
+# Strip out strict SSL requirements from the connection string
 SQLALCHEMY_DATABASE_URL = re.sub(r'[?&]ssl[_-]mode=\w+', '', SQLALCHEMY_DATABASE_URL)
 
-# ==========================================
-# 3. ENGINE CONFIGURATION
-# ==========================================
-# (Note: You defined engine twice in your code, which is fine, but only the last one is used!)
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"ssl": {"check_hostname": False, "verify_mode": 0}}, # Accept cloud SSL certs
-    poolclass=NullPool  # Closes connection immediately after each use to prevent timeouts
+    # connect_args relax SSL rules so cloud databases don't reject the connection
+    connect_args={"ssl": {"check_hostname": False, "verify_mode": 0}}, 
+    # NullPool forces the script to open a fresh connection every time, preventing 
+    # idle connection timeouts when pushing a lot of data.
+    poolclass=NullPool  
 )
 
 # ==========================================
-# 4. DATA MAPPING & SETTINGS
+# 2. CONFIGURATION & MAPPING
 # ==========================================
-# Maps the string words from your INGREDIENTS list to the strict Python Enums in your Models
+# A dictionary to translate the string ratings from your raw data file 
+# into the strict Enum objects required by your database model.
 RATING_MAP = {
     "Safe": models.SafetyRating.SAFE,
     "Moderate": models.SafetyRating.MODERATE,
@@ -49,90 +52,107 @@ RATING_MAP = {
     "Avoid": models.SafetyRating.AVOID,
 }
 
-# BATCH_SIZE: How many ingredients to save at one time. 
-# MAX_RETRIES: How many times to try again if the database crashes.
+# Instead of trying to insert all 350 ingredients at the exact same millisecond 
+# (which can crash a cheap cloud database), we save them in batches of 25.
 BATCH_SIZE = 25
+
+# If the database locks up, we will try to run the script 3 times before finally giving up.
 MAX_RETRIES = 3
 
 # ==========================================
-# 5. THE MAIN SEEDER FUNCTION
+# 3. THE CORE SEEDING LOGIC
 # ==========================================
 def seed_ingredients():
-    # Automatically create the 'ingredients' table in MySQL if it doesn't exist yet
+    # Force SQLAlchemy to check the database and create the 'ingredients' table if it doesn't exist
     Base.metadata.create_all(bind=engine)
 
-    # --- STEP A: DEDUPLICATION ---
-    seen = set() # A Python 'set' is super fast for checking if something already exists
+    # A "set" is a mathematical list that can only contain unique items. 
+    # We use it to ensure we don't accidentally try to insert two ingredients with the exact same name.
+    seen = set() 
     ingredients_to_add = []
     
-    # Loop through the raw data. If we haven't 'seen' the name yet, add it.
+    # Loop through the raw data file
     for ing in INGREDIENTS:
+        # Deduplication check: Have we seen this name before?
         if ing["name"] not in seen:
             seen.add(ing["name"])
             ingredients_to_add.append(ing)
         
-        # Stop once we have exactly 350 unique ingredients
+        # Stop at 350 to prevent overloading a free-tier database limits
         if len(ingredients_to_add) >= 350:
             break
 
     print(f"Seeding database with {len(ingredients_to_add)} ingredients...")
 
-    # --- STEP B: THE RETRY LOOP (Deadlock Handling) ---
-    # Cloud databases sometimes lock up. This loop says: "Try 3 times before giving up."
+    # Start the retry loop. It will try 3 times.
     for attempt in range(MAX_RETRIES):
         try:
-            db = SessionLocal() # Open a database connection
+            # Open a fresh database session
+            db = SessionLocal() 
             added = 0
             
-            # enumerate gives us an index (i) and the data (ing_data)
+            # Loop through the clean, deduplicated list we built earlier
             for i, ing_data in enumerate(ingredients_to_add):
                 
-                # Check if this specific ingredient is ALREADY in the MySQL database
+                # Double-check the ACTUAL database: Does this ingredient already exist in the table?
+                # This prevents errors if you run the seed script twice.
                 exists = db.query(models.Ingredient).filter(models.Ingredient.name == ing_data["name"]).first()
                 
                 if not exists:
-                    # Format the data to match our SQLAlchemy Model exactly
+                    # Prepare the data dictionary, using .get() to provide safe fallbacks 
+                    # if the raw data is missing a description or skin type.
                     data = {
                         "name": ing_data["name"],
-                        # Use the map to get the Enum. If not found, default to SAFE.
                         "safety_rating": RATING_MAP.get(ing_data["safety_rating"], models.SafetyRating.SAFE),
                         "description": ing_data.get("description") or "",
                         "compatible_skin_types": ing_data.get("compatible_skin_types", "All"),
                     }
-                    db.add(models.Ingredient(**data)) # Stage the data to be saved
+                    
+                    # Convert the dictionary into a SQLAlchemy Ingredient object and stage it for saving
+                    # (**data unpacks the dictionary into keyword arguments)
+                    db.add(models.Ingredient(**data)) 
                     added += 1
 
-                # --- STEP C: BATCH COMMITTING ---
-                # Every 25 items, push the data to the database.
+                # If we have staged 25 new ingredients, commit (save) them to the database now.
+                # This keeps memory usage low and prevents the database from getting overwhelmed.
                 if (i + 1) % BATCH_SIZE == 0:
                     db.commit()
             
-            
-
-            # Final commit for any leftovers (e.g., if we had 30 items, the last 5 commit here)
+            # Catch any leftover ingredients that didn't fit perfectly into a batch of 25
             db.commit()
-            db.close() # Clean up the connection
+            
+            # Close the connection and report success!
+            db.close() 
             print(f"Seeding complete! Added {added} ingredients.")
             
-            return # SUCCESS! Exit the function.
+            # Exit the retry loop entirely, the job is done.
+            return 
 
-        # --- STEP D: ERROR HANDLING ---
+        # ==========================================
+        # 4. ERROR HANDLING & DEADLOCK RECOVERY
+        # ==========================================
         except OperationalError as e:
-            # Error 1213 is the specific MySQL code for a "Deadlock"
+            # MySQL Error 1213 is a "Deadlock". It happens when two database processes 
+            # try to edit the same data at the exact same time, and MySQL panics and crashes one of them.
             if hasattr(e.orig, "args") and e.orig.args[0] == 1213:
-                db.rollback() # Undo the current batch to prevent data corruption
-                db.close()    # Close the locked connection
+                # Discard all unsaved changes to prevent corrupt data
+                db.rollback() 
+                db.close()    
                 
-                # If we haven't hit our 3-try limit yet, wait 2 seconds and try again
+                # If we haven't hit our max retry limit yet...
                 if attempt < MAX_RETRIES - 1:
                     print(f"Deadlock detected, retrying in 2s (attempt {attempt + 2}/{MAX_RETRIES})...")
+                    # Wait 2 seconds for the database to calm down before trying the loop again
                     time.sleep(2)
                 else:
-                    raise # We tried 3 times and failed. Crash the program.
+                    # We hit max retries, throw the error and crash the script
+                    raise 
             else:
-                raise # It was a different OperationalError (like wrong password). Crash immediately.
+                # It was a different database error (like a bad password or lost connection), crash immediately
+                raise 
 
 
-
+# This block ensures the script only runs if you type `python seed.py` in the terminal.
+# It prevents the script from accidentally running if you import it into another file.
 if __name__ == "__main__":
-    seed_ingredients() # Run the script when executed from the terminal
+    seed_ingredients()

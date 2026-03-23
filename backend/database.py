@@ -1,74 +1,93 @@
+# 'os' is used to read environment variables from your operating system
 import os
-import re  # Regular Expressions, used here to clean up the database URL string
+
+# 're' is Python's Regular Expression module. It's used here to search and replace text patterns in the database URL.
+import re  
+
+# Import the core tools from SQLAlchemy needed to connect to and communicate with the database
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.pool import NullPool  # Important for stable cloud deployments
+
+# NullPool is a special setting that tells SQLAlchemy NOT to keep a pool of idle database connections open.
+from sqlalchemy.pool import NullPool  
+
+# Loads variables from a local '.env' file into the environment so 'os.getenv' can find them.
 from dotenv import load_dotenv
 
-# 1. Load environment variables (like your DB password) from the .env file into Python's memory
 load_dotenv()
 
-# 2. Fetch the database connection string from the environment.
-# Typically looks like: mysql://user:password@host:port/database_name
+# ==========================================
+# 1. DATABASE URL FORMATTING
+# ==========================================
+
+# Fetches your raw database connection string. If it's not found, it defaults to an empty string to prevent instant crashes.
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# 3. THE DRIVER FIX FOR CLOUD DATABASES
-# Many cloud providers give a generic URL starting with "mysql://".
-# However, SQLAlchemy needs to know EXACTLY which Python library (driver) to use to talk to MySQL.
-# We replace "mysql://" with "mysql+pymysql://" to explicitly tell it to use the PyMySQL driver.
+# SQLAlchemy requires both the database type (mysql) AND the driver being used to connect to it (pymysql).
+# Many cloud database providers just give you "mysql://...". This line automatically fixes the URL 
+# so SQLAlchemy knows exactly which Python driver to use.
 if SQLALCHEMY_DATABASE_URL.startswith("mysql://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
 
-# 4. PREVENTING SSL CONFLICTS
-# Some cloud URLs come with an automatic "?ssl-mode=REQUIRED" at the end.
-# Because we are about to configure SSL manually in step 5, having it in the URL too 
-# causes a "Duplicate Argument" crash. This Regex removes it from the URL string.
+# Cloud databases often append strict SSL requirements (like "?ssl-mode=STRICT") to the URL.
+# This regex searches the URL for anything matching "ssl_mode=" or "ssl-mode=" and deletes it.
+# We do this because we are going to manually configure the SSL settings in the create_engine block below.
 SQLALCHEMY_DATABASE_URL = re.sub(r'[?&]ssl[_-]mode=\w+', '', SQLALCHEMY_DATABASE_URL)
 
-# 5. CREATE THE ENGINE (The actual connection manager)
-# The engine is the core of SQLAlchemy. It manages the actual physical connection to the database.
+
+# ==========================================
+# 2. ENGINE CREATION (The Core Connection)
+# ==========================================
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     
-    # 6. SSL CONFIGURATION (Critical for Cloud MySQL)
-    # This tells Python: "Connect securely via SSL, but don't strictly verify the 
-    # server's certificate." This is required for many free-tier cloud databases 
-    # that use self-signed certificates.
+    # connect_args are extra parameters passed directly to the underlying pymysql driver.
     connect_args={
+        # This dictionary lowers the strictness of the SSL connection. 
+        # By setting check_hostname to False and verify_mode to 0 (CERT_NONE), 
+        # we tell the driver to encrypt the traffic, but NOT to reject the connection 
+        # if the database's SSL certificate is self-signed or missing a hostname match.
         "ssl": {
             "check_hostname": False,
-            "verify_mode": 0  # 0 means CERT_NONE (Do not strictly verify Certificate Authority)
+            "verify_mode": 0  
         }
     },
     
-    # 7. CONNECTION POOLING (Critical for Stability)
-    # Normally, databases keep connections "open" to reuse them (Pooling). 
-    # But in cheap/free cloud hosting, firewalls randomly kill idle connections, 
-    # leading to the dreaded "MySQL server has gone away" error.
-    # NullPool disables pooling entirely. It forces the app to open a brand-new 
-    # connection for every single request and close it immediately after.
+    # By default, SQLAlchemy keeps 5-10 database connections open and idly waiting (a "pool").
+    # NullPool disables this. Every time a user requests data, a fresh connection is opened, 
+    # and when the request finishes, the connection is immediately destroyed. 
+    # This is crucial for serverless deployments to prevent exhausting your database's connection limits.
     poolclass=NullPool  
 )
 
+# ==========================================
+# 3. SESSION & ORM SETUP
+# ==========================================
 
-
-# 8. CREATE THE SESSION FACTORY
-# A "Session" is a temporary workspace where you make your database queries.
-# This 'SessionLocal' is a factory that creates a new workspace whenever we ask for one.
-# autocommit=False ensures data isn't saved until we explicitly say db.commit().
+# SessionLocal is a "factory" that manufactures new, temporary database sessions.
+# autocommit=False: We must manually call db.commit() to save changes, preventing accidental half-saves.
+# autoflush=False: Prevents SQLAlchemy from prematurely pushing changes to the database before we are ready.
+# bind=engine: Connects these sessions to the engine we configured above.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 9. THE BASE MODEL
-# All your database tables (like the 'Ingredient' class) will inherit from this Base.
-# It helps SQLAlchemy map your Python classes to actual SQL tables.
+# Base is the foundational Python class that all your database models (like the User table) will inherit from.
+# It tells SQLAlchemy how to map your Python code to actual SQL tables.
 Base = declarative_base()
 
-# 10. THE FASTAPI DEPENDENCY (The 'Middleman')
-# Every time a user requests an API route, FastAPI runs this function.
+
+# ==========================================
+# 4. DEPENDENCY INJECTION
+# ==========================================
 def get_db():
-    db = SessionLocal()  # Open a fresh database session
+    """
+    This is a FastAPI dependency. When a user hits a route (like logging in), 
+    FastAPI calls this function to get a fresh database connection.
+    """
+    db = SessionLocal() 
     try:
-        yield db         # "Yield" hands the session over to the API route to do its work
+        # 'yield' hands the active database connection to the FastAPI route that requested it.
+        yield db       
     finally:
-        db.close()       # CRITICAL: Always close the connection when the request finishes, 
-                         # even if the code crashes! This prevents memory leaks.
+        # Once the FastAPI route finishes processing and returns a response to the user,
+        # this block executes and securely closes the database connection.
+        db.close()
