@@ -1,55 +1,13 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
 import { Link } from "react-router-dom"
 import { Container, Row, Col } from "react-bootstrap"
 import "./Home.css"
 
 const Home = () => {
-  const [activeInsightIndex, setActiveInsightIndex] = useState(0)
-
-  const insightSlides = [
-    {
-      rawLabel: "Methylparaben",
-      insight: "Avoid: Endocrine Disruptor",
-      leftDescription:
-        "Unprocessed chemical nomenclature often hides potential biological risks.",
-      rightDescription:
-        "Skin Lens cross-references clinical trials to provide actionable health advice.",
-      fillPercent: 70,
-    },
-    {
-      rawLabel: "Sodium Lauryl Sulfate (SLS)",
-      insight: "Use Sparingly: Barrier Disruptor",
-      leftDescription:
-        "Common foaming agents can strip the skin's natural lipid layer when overused.",
-      rightDescription:
-        "Our engine flags surfactants that may compromise barrier integrity at higher concentrations.",
-      fillPercent: 55,
-    },
-    {
-      rawLabel: "Fragrance / Parfum",
-      insight: "Caution: Sensitization Risk",
-      leftDescription:
-        "Opaque 'fragrance' blends may include hundreds of undisclosed aroma chemicals.",
-      rightDescription:
-        "We highlight potential allergenic components and suggest fragrance-free alternatives.",
-      fillPercent: 80,
-    },
-  ]
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setActiveInsightIndex((prev) => (prev + 1) % insightSlides.length)
-    }, 7000)
-
-    return () => clearInterval(intervalId)
-  }, [insightSlides.length])
-
-  const activeInsight = insightSlides[activeInsightIndex]
-
   return (
     <div className="fade-in-up home-page">
       {/* Hero Section */}
-      <section className="hero-section d-flex align-items-center">
+      <section className="hero-section d-flex align-items-center pb-5">
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6} className="fade-in-up order-1 order-lg-1">
@@ -117,162 +75,6 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Chemical-to-Clear Difference */}
-      <section className="bg-pc-white py-5 section-padding">
-        <Container className="text-center">
-          <h2 className="section-title">The Chemical-to-Clear Difference</h2>
-          <p
-            className="mb-5"
-            style={{
-              color: "var(--pc-muted)",
-              maxWidth: 520,
-              margin: "0 auto 48px",
-            }}
-          >
-            Experience the clarity our AI brings to complex formulations.
-          </p>
-
-          <div
-            className="pc-card mx-auto p-4 p-md-5 text-start insight-card"
-            style={{ maxWidth: 780, border: "1px solid var(--pc-border)" }}
-          >
-            <Row className="mb-3 align-items-center insight-card-header">
-              <Col>
-                <small
-                  className="text-uppercase"
-                  style={{
-                    letterSpacing: 2,
-                    color: "var(--pc-muted)",
-                    fontSize: "0.72rem",
-                  }}
-                >
-                  Raw Label
-                </small>
-                <div
-                  className="mt-1"
-                  style={{
-                    fontSize: "1.4rem",
-                    color: "var(--pc-avoid)",
-                    fontWeight: 500,
-                  }}
-                >
-                  {activeInsight.rawLabel}
-                </div>
-              </Col>
-              <Col className="text-end">
-                <small
-                  className="text-uppercase fw-semibold d-block"
-                  style={{
-                    letterSpacing: 2,
-                    color: "var(--pc-gold)",
-                    fontSize: "0.72rem",
-                  }}
-                >
-                  Skin Lens™ Insights
-                </small>
-                <div
-                  className="mt-1"
-                  style={{
-                    fontFamily: "var(--pc-font-serif)",
-                    fontSize: "1.4rem",
-                    fontStyle: "italic",
-                    fontWeight: 700,
-                  }}
-                >
-                  {activeInsight.insight}
-                </div>
-                <div className="mt-2 d-inline-flex align-items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Previous insight"
-                    onClick={() =>
-                      setActiveInsightIndex((prev) =>
-                        prev === 0 ? insightSlides.length - 1 : prev - 1,
-                      )
-                    }
-                    className="btn btn-sm btn-outline-light border-0 px-2"
-                    style={{ color: "var(--pc-muted)" }}
-                  >
-                    <i className="bi bi-chevron-left" />
-                  </button>
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--pc-muted)",
-                      letterSpacing: 1,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {activeInsightIndex + 1} / {insightSlides.length}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Next insight"
-                    onClick={() =>
-                      setActiveInsightIndex(
-                        (prev) => (prev + 1) % insightSlides.length,
-                      )
-                    }
-                    className="btn btn-sm btn-outline-light border-0 px-2"
-                    style={{ color: "var(--pc-muted)" }}
-                  >
-                    <i className="bi bi-chevron-right" />
-                  </button>
-                </div>
-              </Col>
-            </Row>
-            {/* Slider */}
-            <div
-              className="position-relative my-4"
-              style={{
-                height: 4,
-                background: "var(--pc-border)",
-                borderRadius: 2,
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: `${activeInsight.fillPercent}%`,
-                  background: "var(--pc-gold)",
-                  borderRadius: 2,
-                }}
-              ></div>
-              <div
-                style={{
-                  position: "absolute",
-                  left: `${activeInsight.fillPercent}%`,
-                  top: "50%",
-                  transform: "translate(-50%,-50%)",
-                  width: 20,
-                  height: 20,
-                  border: "3px solid var(--pc-gold)",
-                  background: "#fff",
-                  borderRadius: "50%",
-                }}
-              ></div>
-            </div>
-            <Row className="insight-descriptions">
-              <Col
-                className="fst-italic"
-                style={{ color: "var(--pc-muted)", fontSize: "0.88rem" }}
-              >
-                {activeInsight.leftDescription}
-              </Col>
-              <Col
-                className="text-end text-md-end fst-italic"
-                style={{ color: "var(--pc-muted)", fontSize: "0.88rem" }}
-              >
-                {activeInsight.rightDescription}
-              </Col>
-            </Row>
-          </div>
-        </Container>
-      </section>
-
       {/* Pure Science, Pure Beauty */}
       <section className="bg-pc-dark section-padding">
         <Container>
@@ -312,7 +114,7 @@ const Home = () => {
                     fontWeight: 700,
                   }}
                 >
-                  300+
+                  350+
                 </div>
                 <small
                   className="text-uppercase"
@@ -337,7 +139,7 @@ const Home = () => {
                     fontWeight: 700,
                   }}
                 >
-                  99.8%
+                  Gemini
                 </div>
                 <small
                   className="text-uppercase"
@@ -347,7 +149,7 @@ const Home = () => {
                     fontSize: "0.72rem",
                   }}
                 >
-                  Accuracy
+                  AI Powered
                 </small>
               </div>
             </Col>
@@ -357,18 +159,18 @@ const Home = () => {
             {[
               {
                 icon: "bi-database",
-                title: "Deep Database Scan",
-                desc: "Cross-references 300+ ingredients against global safety standards including ECHA, CIR, and FDA.",
+                title: "350+ Ingredients Analyzed",
+                desc: "Our database covers 350+ cosmetic ingredients rated across four safety levels — Safe, Moderate, Irritant, and Avoid.",
               },
               {
-                icon: "bi-person-check",
-                title: "Personalized Risk Profile",
-                desc: "Tailors analysis to your specific skin type, sensitivities, and allergies for a truly bespoke report.",
+                icon: "bi-patch-question",
+                title: "Skin Type Quiz",
+                desc: "Answer 5 quick questions to discover your skin type and get personalized ingredient recommendations saved to your profile.",
               },
               {
                 icon: "bi-camera",
-                title: "Instant Label Scan",
-                desc: "Scan any product label with your camera for immediate results, powered by advanced OCR and computer vision.",
+                title: "AI Label Scanner",
+                desc: "Upload a photo of any product label and Gemini Vision AI instantly extracts and rates every ingredient for your skin.",
               },
             ].map((f, i) => (
               <Col md={4} key={i}>
