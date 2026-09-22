@@ -1,0 +1,158 @@
+/* Home page – mobile responsiveness */
+
+.home-page {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.home-page .hero-section {
+  min-height: 85vh;
+  padding-top: 60px;
+}
+
+.home-page .hero-title {
+  font-size: 4.2rem;
+  line-height: 1.05;
+  margin-bottom: 24px;
+}
+
+.home-page .section-padding {
+  padding: 100px 0;
+}
+
+.home-page .section-title {
+  font-size: 2.6rem;
+  margin-bottom: 12px;
+}
+
+.home-page .section-title-lg {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.home-page .insight-card-header {
+  flex-wrap: nowrap;
+}
+
+.home-page .insight-descriptions {
+  flex-wrap: nowrap;
+}
+
+/* Tablet and below */
+@media (max-width: 991px) {
+  .home-page .hero-section {
+    min-height: auto;
+    padding-top: 40px;
+    padding-bottom: 48px;
+  }
+
+  .home-page .hero-title {
+    font-size: 2.75rem;
+  }
+
+  .home-page .hero-buttons {
+    flex-wrap: wrap;
+  }
+
+  .home-page .hero-image-col {
+    order: -1;
+    margin-bottom: 32px;
+  }
+
+  .home-page .section-padding {
+    padding: 60px 0;
+  }
+
+  .home-page .section-title {
+    font-size: 2rem;
+  }
+
+  .home-page .section-title-lg {
+    font-size: 2.25rem;
+  }
+
+  .home-page .stats-col {
+    justify-content: flex-start !important;
+    margin-top: 24px;
+  }
+
+  .home-page .insight-card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px;
+  }
+
+  .home-page .insight-card-header .text-end {
+    text-align: left !important;
+  }
+
+  .home-page .insight-descriptions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .home-page .insight-descriptions .text-end {
+    text-align: left !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 575px) {
+  .home-page .hero-section {
+    padding-top: 24px;
+    padding-bottom: 40px;
+  }
+
+  .home-page .hero-title {
+    font-size: 2rem;
+    margin-bottom: 16px;
+  }
+
+  .home-page .hero-subtext {
+    font-size: 1rem !important;
+    max-width: 100% !important;
+  }
+
+  .home-page .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .home-page .hero-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .home-page .hero-image-col img {
+    max-height: 280px !important;
+  }
+
+  .home-page .section-padding {
+    padding: 48px 0;
+  }
+
+  .home-page .section-title {
+    font-size: 1.6rem;
+  }
+
+  .home-page .section-title-lg {
+    font-size: 1.75rem;
+  }
+
+  .home-page .insight-card {
+    padding: 1rem !important;
+  }
+
+  .home-page .insight-card .mt-1 {
+    font-size: 1.15rem !important;
+  }
+
+  .home-page .stats-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .home-page .stat-box {
+    width: 100%;
+  }
+}
