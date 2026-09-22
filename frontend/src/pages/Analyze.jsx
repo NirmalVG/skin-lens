@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { Container, Row, Col, Spinner, Modal } from "react-bootstrap"
 import Skeleton from "react-loading-skeleton"
 import "react-loading-skeleton/dist/skeleton.css"
@@ -24,6 +24,15 @@ const Analyze = () => {
   const [showClinicalModal, setShowClinicalModal] = useState(false)
   const [selectedIngredient, setSelectedIngredient] = useState(null)
   const inputRef = useRef(null)
+  const cameraRef = useRef(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    )
+    setIsMobile(checkMobile)
+  }, [])
 
   const openClinicalDetails = (ingredient) => {
     setSelectedIngredient(ingredient)
@@ -130,7 +139,7 @@ const Analyze = () => {
               type="file"
               accept="image/*"
               hidden
-              onChange={(e) => handleFile(e.target.files[0])}
+              onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
             />
             <div className="mb-3">
               <span
@@ -173,22 +182,23 @@ const Analyze = () => {
               </button>
             </Col>
             <Col xs="auto">
-              <div className="position-relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  hidden
-                  onChange={(e) => handleFile(e.target.files[0])}
-                  id="camera-capture"
-                />
-                <label
-                  htmlFor="camera-capture"
-                  className="btn btn-pc-primary btn-lg rounded-pill px-4"
-                >
-                  <i className="bi bi-camera-fill me-2"></i> Take Photo
-                </label>
-              </div>
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                {...(isMobile ? { capture: "environment" } : {})}
+                hidden
+                onChange={(e) => {
+                  if (e.target.files[0]) handleFile(e.target.files[0])
+                  e.target.value = ""
+                }}
+              />
+              <button
+                className="btn btn-pc-primary btn-lg rounded-pill px-4"
+                onClick={() => cameraRef.current?.click()}
+              >
+                <i className="bi bi-camera-fill me-2"></i> Take Photo
+              </button>
             </Col>
           </Row>
         )}
