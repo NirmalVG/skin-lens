@@ -1,0 +1,57 @@
+name: Keep Alive
+
+# Runs every 14 minutes to prevent Render + Filess.io from sleeping
+on:
+  schedule:
+    - cron: "*/14 * * * *"
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Ping the Render web service
+      - name: Ping Render /health
+        run: |
+          echo "Pinging Render..."
+          curl -sf --max-time 30 https://skin-lens.onrender.com/health || echo "Render ping failed (may be cold-starting)"
+
+      # 2. Ping the MySQL database to prevent it from pausing
+      - name: Ping MySQL Database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Pinging MySQL database..."
+          pip install pymysql > /dev/null 2>&1
+          python -c "
+          import pymysql
+          import os, re
+          from urllib.parse import urlparse
+
+          url = os.environ.get('DATABASE_URL', '')
+
+          # Strip scheme prefix
+          url = re.sub(r'^mysql(\+pymysql)?://', 'mysql://', url)
+          # Remove ssl-mode params
+          url = re.sub(r'[?&]ssl[_-]mode=\w+', '', url)
+
+          parsed = urlparse(url)
+
+          try:
+              conn = pymysql.connect(
+                  host=parsed.hostname,
+                  port=parsed.port or 3306,
+                  user=parsed.username,
+                  password=parsed.password,
+                  database=parsed.path.lstrip('/'),
+                  connect_timeout=30,
+                  ssl={'check_hostname': False, 'verify_mode': 0}
+              )
+              cursor = conn.cursor()
+              cursor.execute('SELECT 1')
+              print('✅ Database is alive:', cursor.fetchone())
+              conn.close()
+          except Exception as e:
+              print(f'⚠️ Database ping failed: {e}')
+          "
